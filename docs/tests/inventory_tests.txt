@@ -1,0 +1,7 @@
+TC-INV-01 [Strict Non-Negative Stock]: Gọi Stock.reserve(15) trên một SKU chỉ có available = 10 -> Ném lỗi DomainException(INSUFFICIENT_STOCK).
+
+TC-INV-02 [Stock Balance]: Gọi Stock.reserve(5) trên available = 10. Assert available == 5 và reserved == 5.
+
+TC-INV-03 [Reservation Terminal Lifecycle]: Gọi Stock.release() lên một Reservation đang ở trạng thái CONSUMED. Assert kết quả là No-Op (không thay đổi số lượng kho, không ném lỗi crash hệ thống - Idempotent).
+
+TC-INV-04 [Tenant Isolation]: Gọi hàm setAvailable(50, "M-999") trên một Stock thuộc sở hữu của merchantId = "M-111" -> Ném lỗi DomainException(TENANT_MISMATCH).
