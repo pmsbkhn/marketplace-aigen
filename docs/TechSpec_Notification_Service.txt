@@ -1,0 +1,73 @@
+THIT K CHI TIT -- NOTIFICATION SERVICE
+
+Khung kin trúc: msfw Hexagonal | Domain Context: delivery | Phiên bn: v1.0
+
+  1. Cu trúc thành phn Module (Hexagonal msfw Layout)
+
+Dch v thông báo m bo lung ingest tin nhn bt ng b s lng ln t h thng s kin Kafka ca sàn, x
+lý nh tuyn a kênh và tích hp lng lo vi các nhà cung cp SMS/Email bên th ba.
+
+ADAPTER LAYER (V ngoài)                          APPLICATION LAYER (iu      DOMAIN LAYER (Lõi
+                                                                 phi)             nghip v)
+
+ inbound                                          ports.in (Use Cases)       models
+
+- NotificationController (REST)                  - AcceptNotification       - Notification
+-                                                                           (Aggregate Root)
+MarketplaceEventPipelineFactory                   ports.out                 - NotificationId
+(Kafka)                                                                     (Identity)
+                                                 -                          - DeliveryAttempt
+ outbound                                        NotificationProviderPort   (DomainValue)
+                                                 -
+- EmailProviderOa (SES Adapter)                  Repository<Notification>
+- SmsProviderOa (Twilio Client)
+- PreferencesClientOa (gRPC API)
+
+2. Danh sách Invariants (Bt bin nghip v) ca Domain
+
+· Bt bin 1: Bo v nghiêm ngt Máy trng thái thông báo: Chu trình dch chuyn trng thái ni ti bt buc
+ phi i theo mô hình óng gói: ACCEPTED ightarrow RENDERED ightarrow (SENT \mid SUPPRESSED \mid
+ FAILED). Mi hành vi cp nht trng thái sai lch chu trình hoc c tình chnh sa bn ghi khi ã  trng thái
+ terminal (SENT, FAILED, SUPPRESSED) u b Aggregate ph quyt.
+
+· Bt bin 2: Tôn trng quyn t chi nhn tin (Consent Enforcement & Opt-Out): i vi các tin nhn
+ thuc danh mc thông báo hàng lot (priority = BULK), mô hình Domain bt buc phi thc hin i chiu
+ tùy chn ngi dùng thông qua cng kt ni Preference. Nu ngi dùng cu hình t chi nhn tin, trng thái
+ bn ghi bt buc phi chuyn sang SUPPRESSED lp tc ti khâu x lý ca domain, nghiêm cm lung gi
+ Adapter y lnh sang nhà cung cp dch v ngoài (Twilio/SES) nhm m bo tuân th pháp lý.
+
+· Bt bin 3: Bo mt d liu nhy cm & Transient L4 Storage: D liu cha mã xác thc OTP giao dch
+ nhy cm cao (L4 Data Class) nghiêm cm ghi nhn  dng rõ (Plaintext) ti bt k h tng lu tr lâu dài
+ hoc file log nào h thng. OTP ch c duy trì transient ngn hn trong b nh hoc cache mã hóa. Nu bt
+ buc lu log li h thng, toàn b tham s variables phi c mã hóa bng thut toán i xng
+ **AES-256** kèm khóa rotate qun lý bi AWS KMS và h tr tính nng Cryptographic Erasure (Hy khóa xóa
+ sch d liu).
+
+H thng E-commerce Marketplace -- Tài liu K thut                                                1
+  3. Thit k chi tit Interface Use Cases
+
+Khai báo Use Case tng Application x lý tip nhn thông báo h thng:
+
+    package tech.vsf.ptnt.msfw.notification.application.port.in;
+
+    import tech.vsf.ptnt.msfw.notification.application.dto.*;
+
+    // 3.1 Use Case: Tip nhn và bn vng hóa tin nhn thông báo vào h thng hàng i an toàn
+    public interface AcceptNotification {
+
+           void execute(AcceptNotificationCmd cmd);
+    }
+
+    // --- Data Contracts ---
+    public record AcceptNotificationCmd(
+
+           String idempotencyKey, // Khóa kh trùng x lý ingest
+           String userId,
+           String channel, // Hp l: "EMAIL", "SMS", "PUSH", "AUTO"
+           String templateId,
+           java.util.Map<String, String> variables, // Cha d liu render thông tin
+           String priority // Hp l: "TRANSACTIONAL" (Lane u tiên cao), "BULK" (Lane tip th)
+    ) {}
+
+H thng E-commerce Marketplace -- Tài liu K thut                                              2
+
