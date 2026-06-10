@@ -1,0 +1,31 @@
+DOMAIN INVARIANT TEST CASES (Kiểm soát nghiệp vụ lõi)
+Phần này "ép" AI phải viết các Guard Clauses vững chắc bên trong các Aggregate Root. Khởi tạo đối tượng bằng Factory hoặc constructor an toàn.
+
+TC-PAY-01 [Amount Cross-Check / Tampering]: Khởi tạo Payment với amount = 1500000 (Init Escrow). Gọi hàm confirmPayment(gatewayTxnId, webhookAmount). Truyền webhookAmount = 1000000 (giả lập hacker sửa payload) -> Assert ném lỗi DomainException(AMOUNT_MISMATCH), trạng thái Payment giữ nguyên PENDING.
+
+TC-PAY-02 [Payment State Machine]: Khởi tạo Payment (PENDING). Gọi confirmPayment() hợp lệ chuyển sang PAID. Tiếp tục gọi markFailed() trên object này -> Assert ném lỗi InvalidTransitionException (Vì PAID là trạng thái terminal).
+
+TC-PAY-03 [Escrow Release Safety]: Khởi tạo EscrowHold gắn với một Payment đang ở trạng thái PENDING. Gọi hàm releaseForOrder(orderId) -> Assert ném lỗi DomainException(PAYMENT_NOT_COMPLETED). Quỹ chỉ được giải phóng khi Payment gốc đã PAID.
+
+TC-PAY-04 [Settlement Completeness]: Khởi tạo Settlement (PROCESSING). Gọi hàm complete() để đóng đối soát trong khi thuộc tính docUri vẫn đang là null -> Assert ném lỗi DomainException(MISSING_SETTLEMENT_DOCUMENT).
+
+TC-PAY-05 [Commission Policy Rule]: Viết test cho domain service CommissionPolicy. Truyền gross = 1000000 với hạng Merchant tiêu chuẩn -> Assert kết quả commission tính ra đúng công thức (ví dụ 2%), net = 980000.
+
+TC-PAY-06 [Payout Idempotency]: Trên Payout entity, gọi hàm submit() hai lần liên tiếp với cùng một trạng thái. Assert lần gọi thứ hai bị block hoặc trả về No-Op để tránh gửi lệnh đúp xuống ngân hàng.
+
+ĐẶC TẢ KIỂM THỬ TẦNG ADAPTER (Integration & Security)
+Để đảm bảo AI sinh mã nguồn hạ tầng tích hợp đúng thiết kế, bạn cần các test cases sau:
+
+TC-PAY-INT-01 [Webhook HMAC Verification]: Dùng MockMvc. Gửi request POST v1/payments/webhook.
+
+Case A: Header chứa chữ ký HMAC sai -> Assert HTTP 401.
+
+Case B: Chữ ký đúng, nhưng timestamp trong payload cũ hơn 5 phút (Replay attack) -> Assert HTTP 401.
+
+Case C: Chữ ký đúng, timestamp mới -> Assert HTTP 200, Use Case được gọi.
+
+TC-PAY-INT-02 [L4 Data Encryption]: Khởi tạo thực thể Entity chứa số tài khoản ngân hàng của Merchant. Gọi Repository lưu xuống DB ảo (H2). Dùng Native SQL query trực tiếp vào bảng DB để đọc cột bank_account_encrypted -> Assert giá trị lấy ra là chuỗi ciphertext (bắt đầu bằng prefix mã hóa), hoàn toàn không chứa plaintext của số tài khoản.
+
+TC-PAY-INT-03 [S3 WORM Immutability]: Viết test tích hợp (có thể dùng LocalStack) cho lớp SettlementDocWriterOa. Khi hệ thống upload thành công chứng từ đối soát lên S3 result buckets, gọi tiếp một lệnh upload khác với cùng tên file để cố tình ghi đè. Assert thư viện S3 trả về lỗi AccessDenied nhằm chứng minh cơ chế phân quyền prevent overwrite or override đã hoạt động chính xác. Trong trường hợp mã đối soát nguồn chưa được sinh ra kịp, tên file chứng từ tạm thời có thể chứa hậu tố TBD để hệ thống nhận diện và cập nhật meta sau, nhưng nội dung object gốc vẫn phải khóa cứng.
+
+TC-PAY-INT-04 [Idempotency DB Lock]: Viết test giả lập 2 luồng (thread) cùng nhận được 1 Webhook ID (gateway_txn_id) và gọi lưu xuống PaymentOa. Assert luồng thứ hai bị văng lỗi DataIntegrityViolationException (do UNIQUE constraint), chứng minh database là chốt chặn cuối cùng khử trùng lặp giao dịch.
