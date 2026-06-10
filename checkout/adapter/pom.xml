@@ -15,6 +15,10 @@
 	<name>checkout-service</name>
 	<description>checkout-service</description>
 
+	<properties>
+		<app.main-class>vn.marketplace.checkout.adapter.CheckoutServiceApplication</app.main-class>
+	</properties>
+
 	<!-- Stateless orchestrator: NO JPA, NO database, NO outbox/Kafka — REST in, REST/gRPC out,
 	     short-lived session store only (Redis in production, in-memory stand-in standalone). -->
 	<dependencies>
@@ -100,6 +104,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<mainClass>${app.main-class}</mainClass>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
@@ -107,6 +112,13 @@
 						</exclude>
 					</excludes>
 				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

@@ -1,0 +1,53 @@
+# Checkout service — stateless saga orchestrator in the meshed `marketplace` namespace.
+# No database; calls sibling services over REST by their in-cluster Service DNS.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: marketplace
+  labels: { app: checkout }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: checkout }
+  template:
+    metadata:
+      labels: { app: checkout }
+      annotations:
+        proxy.istio.io/config: '{"holdApplicationUntilProxyStarts": true}'
+    spec:
+      containers:
+        - name: checkout
+          image: checkout-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
+          resources:
+            requests: { cpu: 200m, memory: 384Mi }
+            limits:   { cpu: "2",  memory: 768Mi }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            periodSeconds: 5
+            failureThreshold: 40
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout
+  namespace: marketplace
+  labels: { app: checkout }
+spec:
+  selector: { app: checkout }
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

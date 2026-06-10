@@ -1,0 +1,71 @@
+# Payment service — meshed `marketplace` namespace, real Postgres (payment_db).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment
+  namespace: marketplace
+  labels: { app: payment }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: payment }
+  template:
+    metadata:
+      labels: { app: payment }
+      annotations:
+        proxy.istio.io/config: '{"holdApplicationUntilProxyStarts": true}'
+    spec:
+      containers:
+        - name: payment
+          image: payment-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
+            - name: DB_HOST
+              value: postgres.infra
+            - name: DB_NAME
+              value: payment_db
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: payment-db, key: username } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: payment-db, key: password } }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits:   { cpu: "2",  memory: 1Gi }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            periodSeconds: 5
+            failureThreshold: 40
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: payment-db
+  namespace: marketplace
+  labels: { app: payment }
+type: Opaque
+stringData:
+  username: marketplace
+  password: marketplace
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment
+  namespace: marketplace
+  labels: { app: payment }
+spec:
+  selector: { app: payment }
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
