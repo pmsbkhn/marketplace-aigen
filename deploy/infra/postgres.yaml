@@ -1,0 +1,92 @@
+# PostgreSQL — one instance hosting a database per bounded context (DB-per-context logically).
+# Official multi-arch image (arm64-native). Local credentials only.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres
+  labels: { app: postgres }
+type: Opaque
+stringData:
+  POSTGRES_USER: marketplace
+  POSTGRES_PASSWORD: marketplace
+  POSTGRES_DB: marketplace
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-initdb
+  labels: { app: postgres }
+data:
+  01-create-databases.sql: |
+    CREATE DATABASE catalog_db;
+    CREATE DATABASE inventory_db;
+    CREATE DATABASE order_db;
+    CREATE DATABASE payment_db;
+    CREATE DATABASE notification_db;
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  labels: { app: postgres }
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels: { app: postgres }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: "1",  memory: 1Gi }
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "marketplace"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
+        - name: initdb
+          configMap:
+            name: postgres-initdb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels: { app: postgres }
+spec:
+  selector: { app: postgres }
+  ports:
+    - port: 5432
+      targetPort: 5432

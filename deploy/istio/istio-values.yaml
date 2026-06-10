@@ -1,0 +1,43 @@
+# Istio install profile for the local cluster (istioctl install -f this).
+# Sidecar mesh (well-understood + works on arm64). Switch to ambient later by setting
+# `profile: ambient` and removing the sidecar injection labels in the Makefile.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: marketplace-istio
+spec:
+  profile: default
+  values:
+    global:
+      proxy:
+        # Keep sidecar footprint modest for a local multi-service mesh.
+        resources:
+          requests:
+            cpu: 50m
+            memory: 96Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+    ingressGateways:
+      - name: istio-ingressgateway
+        enabled: true
+        k8s:
+          service:
+            type: LoadBalancer
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+    egressGateways:
+      - name: istio-egressgateway
+        enabled: false
+  meshConfig:
+    # Tracing/telemetry can be enabled in Phase D; keep defaults lean for now.
+    enablePrometheusMerge: true

@@ -1,0 +1,32 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: marketplace
+servers: 1
+agents: 2
+image: rancher/k3s:v1.31.4-k3s1
+registries:
+  create:
+    name: marketplace-registry
+    host: "0.0.0.0"
+    hostPort: "5050"   # push images to localhost:5050; in-cluster: marketplace-registry:5000
+ports:
+  - port: 80:80        # Istio ingress gateway (HTTP)
+    nodeFilters:
+      - loadbalancer
+  - port: 443:443      # Istio ingress gateway (HTTPS)
+    nodeFilters:
+      - loadbalancer
+options:
+  k3s:
+    extraArgs:
+      # Disable the bundled Traefik + servicelb — Istio provides ingress and LB.
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+      - arg: --disable=servicelb
+        nodeFilters:
+          - server:*
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: true
