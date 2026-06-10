@@ -1,0 +1,11 @@
+# Standalone profile: make the config-server import optional so the service boots even when no
+# Spring Cloud Config server is running. Loaded via spring.cloud.bootstrap.name=bootstrap-standalone
+# (set in NotificationStandaloneApplication.main). Production bootstrap.yml is unchanged.
+spring:
+  application:
+    name: notification-service
+  config:
+    import: "optional:configserver:http://localhost:8071"
+  cloud:
+    config:
+      enabled: false
