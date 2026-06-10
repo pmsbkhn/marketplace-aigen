@@ -1,0 +1,8 @@
+# Test classpath shadows src/main/resources/bootstrap.yml — no config server, no profile,
+# so any Spring-context test boots without external infrastructure.
+spring:
+  application:
+    name: checkout-service
+  cloud:
+    config:
+      enabled: false

@@ -20,6 +20,9 @@ import org.springframework.context.annotation.Import;
 @Import(CatalogStandaloneConfiguration.class)
 public class CatalogStandaloneApplication {
     public static void main(String[] args) {
+        // Legacy bootstrap (forced by spring-cloud-starter-bootstrap) ignores the active profile;
+        // point it at bootstrap-standalone.yml: optional configserver import + config client disabled.
+        System.setProperty("spring.cloud.bootstrap.name", "bootstrap-standalone");
         SpringApplication.run(CatalogStandaloneApplication.class, args);
     }
 }
