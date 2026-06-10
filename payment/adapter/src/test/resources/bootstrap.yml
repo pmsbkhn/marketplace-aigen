@@ -1,0 +1,8 @@
+# Test classpath shadows src/main/resources/bootstrap.yml — no config server, no profile,
+# so Spring-context slice tests (@DataJpaTest) boot without any external infrastructure.
+spring:
+  application:
+    name: payment-service
+  cloud:
+    config:
+      enabled: false

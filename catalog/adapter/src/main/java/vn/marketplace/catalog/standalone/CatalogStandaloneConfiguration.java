@@ -32,6 +32,8 @@ import vn.marketplace.catalog.application.product.ModerateProduct;
 import vn.marketplace.catalog.application.product.ModerateProductUc;
 import vn.marketplace.catalog.application.product.SearchProducts;
 import vn.marketplace.catalog.application.product.SearchProductsUc;
+import vn.marketplace.catalog.application.product.UpdateSkuPrice;
+import vn.marketplace.catalog.application.product.UpdateSkuPriceUc;
 import vn.marketplace.catalog.domain.product.management.Product;
 
 /**
@@ -113,5 +115,11 @@ public class CatalogStandaloneConfiguration {
     @Bean
     public SearchProducts searchProducts(Repository<Product> productRepository) {
         return new SearchProductsUc(productRepository);
+    }
+
+    @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
+    public UpdateSkuPrice updateSkuPrice(Repository<Product> productRepository) {
+        return new UpdateSkuPriceUc(productRepository);
     }
 }

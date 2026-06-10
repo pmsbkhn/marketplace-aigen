@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: checkout-service
+  config:
+    import: configserver:http://localhost:8071
+  profiles:
+    active: demo
