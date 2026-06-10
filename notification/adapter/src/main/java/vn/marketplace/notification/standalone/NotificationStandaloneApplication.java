@@ -1,0 +1,25 @@
+package vn.marketplace.notification.standalone;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
+
+/**
+ * Standalone entry point — boots Notification with ZERO external infrastructure (H2 + JSON
+ * transactional-outbox, no config server, no Kafka). Wires the JSON outbox via
+ * {@link NotificationStandaloneConfiguration}.
+ *
+ * <p>Run: {@code mvn -pl adapter spring-boot:run
+ *   -Dspring-boot.run.main-class=vn.marketplace.notification.standalone.NotificationStandaloneApplication
+ *   -Dspring-boot.run.profiles=standalone}
+ */
+@SpringBootApplication(scanBasePackages = "vn.marketplace.notification.adapter.delivery")
+@Import(NotificationStandaloneConfiguration.class)
+public class NotificationStandaloneApplication {
+    public static void main(String[] args) {
+        // Legacy bootstrap (forced by spring-cloud-starter-bootstrap) ignores the active profile;
+        // point it at bootstrap-standalone.yml: optional configserver import + config client disabled.
+        System.setProperty("spring.cloud.bootstrap.name", "bootstrap-standalone");
+        SpringApplication.run(NotificationStandaloneApplication.class, args);
+    }
+}
