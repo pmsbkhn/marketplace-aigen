@@ -11,12 +11,14 @@ import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Identity;
 import tech.vsf.ptnt.msfw.domain.core.PagedSearchResult;
 import tech.vsf.ptnt.msfw.domain.core.Pagination;
-import tech.vsf.ptnt.msfw.domain.core.Repository;
+import tech.vsf.ptnt.msfw.domain.core.criteria.Condition;
+import tech.vsf.ptnt.msfw.domain.core.criteria.MatchAll;
+import tech.vsf.ptnt.msfw.domain.core.criteria.Operator;
 import vn.marketplace.payment.domain.payment.management.EscrowHold;
 import vn.marketplace.payment.domain.payment.management.Payment;
 
-/** Hand-written in-memory {@code Repository<Payment>} fake (preferred over Mockito for new JDKs). */
-class InMemoryPaymentRepository implements Repository<Payment> {
+/** Hand-written in-memory {@link PaymentRepository} fake (preferred over Mockito for new JDKs). */
+class InMemoryPaymentRepository implements PaymentRepository {
 
     final Map<String, Payment> store = new LinkedHashMap<>();
     final List<Payment> saved = new ArrayList<>();
@@ -38,14 +40,30 @@ class InMemoryPaymentRepository implements Repository<Payment> {
 
     @Override
     public List<Payment> findBy(Criteria criteria) {
-        PaymentCriteria c = (PaymentCriteria) criteria;
+        if (criteria instanceof MatchAll) {
+            return new ArrayList<>(store.values());
+        }
+        if (criteria instanceof Condition c && c.operator() == Operator.EQ) {
+            return switch (c.attribute()) {
+                case "orderRef" -> store.values().stream()
+                        .filter(p -> c.singleValue().equals(p.orderRef()))
+                        .toList();
+                case "gatewayTxnId" -> store.values().stream()
+                        .filter(p -> c.singleValue().equals(p.gatewayTxnId()))
+                        .toList();
+                default -> throw new UnsupportedOperationException(
+                        "Attribute not supported by this fake: " + c.attribute());
+            };
+        }
+        throw new UnsupportedOperationException("Criteria not supported by this fake: " + criteria);
+    }
+
+    /** Mirrors the adapter's holds-collection join (beyond the Criteria translator). */
+    @Override
+    public Optional<Payment> findByHoldOrderId(String orderId) {
         return store.values().stream()
-                .filter(p -> c.orderRef() == null || c.orderRef().equals(p.orderRef()))
-                .filter(p -> c.gatewayTxnId() == null || c.gatewayTxnId().equals(p.gatewayTxnId()))
-                .filter(p -> c.orderId() == null || p.holds().stream()
-                        .map(EscrowHold::orderId)
-                        .anyMatch(c.orderId()::equals))
-                .toList();
+                .filter(p -> p.holds().stream().map(EscrowHold::orderId).anyMatch(orderId::equals))
+                .findFirst();
     }
 
     @Override

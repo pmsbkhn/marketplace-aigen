@@ -52,7 +52,7 @@ if publishing); `adapter` → `spring-outbox` or `spring-adapter-core` (+ `event
 | Input / read model | `…Cmd` (record) / `…View` |
 | Repository port | `… extends Repository<T>` |
 | REST / boundary / DTO | `…Controller` / `…Facade` (`@Service`,`@Transactional`) / `…Request`,`…Response` |
-| Persistence | `…Oa` (impl `Repository<T>`), `…Entity` (`@Entity`), `…JpaRepository extends JpaRepository` |
+| Persistence | `…Oa` (extends `AbstractJpaOa`/`AbstractMementoJpaOa`), `…Entity` (`@Entity extends LongIdJpaEntity`), `…JpaRepository extends JpaOaRepository<E>` |
 | Consumer | `…PipelineFactory extends FiveStepsPipelineFactory<Cmd>` |
 
 Adapter package: `…adapter.<feature>.{inbound/{restful,messaging}, outbound/persistence}` +
@@ -89,8 +89,17 @@ public class AdapterConfiguration {
 }
 ```
 
-**Outbound adapter** = hand-written `…Oa implements Repository<X>` mapping domain↔entity (use the
-aggregate `Memento` for reconstruction); `…JpaRepository` is an empty Spring Data interface.
+**Outbound adapter** = `…Oa` extends msfw `AbstractJpaOa<A, E>` (or `AbstractMementoJpaOa<A, M, E>`
+when the aggregate `implements Snapshotable<M>` — memento record + static `restore(M)` factory).
+Subclass supplies only `jpa()` / mapping / `identityCriteria(id)`; the base class owns save
+(insert-vs-update + surrogate-`_id` threading both ways — mapping code never touches ids),
+`findById`/`delete`, and `findBy(Criteria[, Pagination])` via the `Criteria.where(...)` DSL →
+JPA Specification with real DB paging. Entities extend `LongIdJpaEntity` (no own `@Id`);
+`…JpaRepository extends JpaOaRepository<E>` and stays empty except derived `@Query` finders for
+lookups the translator can't express (collection joins) — expose those as extra port methods and
+map rows via `reconstitute(entity)`, never `toDomain` directly. If a use-case may save a *fresh*
+aggregate for an existing row (upsert-by-natural-key), override `save` to pre-resolve `_id` via
+`findEntity(aggregate.id())` then call `super.save`.
 
 **Consume event** = `…PipelineFactory extends FiveStepsPipelineFactory<Cmd>` overriding
 `declareDomainEventType / declareEventDeserializer / declareEventDataDeserializer /

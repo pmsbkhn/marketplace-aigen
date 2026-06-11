@@ -31,6 +31,7 @@ import vn.marketplace.payment.application.payment.HandleWebhookUc;
 import vn.marketplace.payment.application.payment.InitEscrow;
 import vn.marketplace.payment.application.payment.InitEscrowUc;
 import vn.marketplace.payment.application.payment.PaymentGatewayPort;
+import vn.marketplace.payment.application.payment.PaymentRepository;
 import vn.marketplace.payment.application.payment.ProcessPayout;
 import vn.marketplace.payment.application.payment.ProcessPayoutUc;
 import vn.marketplace.payment.application.payment.ProcessSettlement;
@@ -114,7 +115,7 @@ public class PaymentStandaloneConfiguration {
 
     @Bean
     @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
-    public ProcessSettlement processSettlement(Repository<Payment> paymentRepository,
+    public ProcessSettlement processSettlement(PaymentRepository paymentRepository,
                                                Repository<Settlement> settlementRepository,
                                                SettlementDocWriter settlementDocWriter,
                                                CommissionPolicy commissionPolicy) {

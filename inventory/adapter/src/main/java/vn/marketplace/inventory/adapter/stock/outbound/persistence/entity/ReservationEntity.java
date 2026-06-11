@@ -4,13 +4,11 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import tech.vsf.ptnt.springcore.persistence.LongIdJpaEntity;
 
 @Entity
 @Table(name = "reservations", indexes = {
@@ -18,11 +16,7 @@ import lombok.Setter;
 })
 @Getter
 @Setter
-public class ReservationEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class ReservationEntity extends LongIdJpaEntity {
 
     @Column(name = "reservation_id", nullable = false)
     private String reservationId;

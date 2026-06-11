@@ -1,21 +1,13 @@
 package vn.marketplace.order.adapter.order.outbound.persistence;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-
+import tech.vsf.ptnt.springcore.persistence.JpaOaRepository;
 import vn.marketplace.order.adapter.order.outbound.persistence.entity.OrderEntity;
 
-public interface OrderJpaRepository extends JpaRepository<OrderEntity, Long> {
-
-    Optional<OrderEntity> findByOrderId(String orderId);
-
-    Optional<OrderEntity> findByCheckoutRef(String checkoutRef);
-
-    List<OrderEntity> findByBuyerId(String buyerId);
-
-    List<OrderEntity> findByMerchantId(String merchantId);
-
-    void deleteByOrderId(String orderId);
+/**
+ * Spring Data contract for {@link OrderOa}. No hand-written finders: identity lookup goes through
+ * {@code identityCriteria} ({@code orderId}) and all other filters ({@code checkoutRef},
+ * {@code buyerId}, {@code merchantId}, {@code status}) are simple root attributes covered by the
+ * msfw {@code Criteria} DSL → Specification translation.
+ */
+public interface OrderJpaRepository extends JpaOaRepository<OrderEntity> {
 }

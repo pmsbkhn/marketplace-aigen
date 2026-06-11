@@ -3,6 +3,7 @@ package vn.marketplace.payment.application.payment;
 import java.util.List;
 import java.util.UUID;
 
+import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.msfw.event.handling.EventPublishHandler;
 import tech.vsf.ptnt.msfw.outbox.store.JsonEventStoreProcessor;
@@ -29,12 +30,12 @@ import vn.marketplace.payment.domain.shared.PaymentErrorCode;
  */
 public class ProcessSettlementUc implements ProcessSettlement {
 
-    private final Repository<Payment> paymentRepository;
+    private final PaymentRepository paymentRepository;
     private final Repository<Settlement> settlementRepository;
     private final SettlementDocWriter docWriter;
     private final CommissionPolicy commissionPolicy;
 
-    public ProcessSettlementUc(Repository<Payment> paymentRepository,
+    public ProcessSettlementUc(PaymentRepository paymentRepository,
                                Repository<Settlement> settlementRepository,
                                SettlementDocWriter docWriter,
                                CommissionPolicy commissionPolicy) {
@@ -47,13 +48,12 @@ public class ProcessSettlementUc implements ProcessSettlement {
     @Override
     @EventPublishHandler(eventProcessors = {JsonEventStoreProcessor.class})
     public SettlementView execute(ProcessSettlementCmd cmd) {
-        List<Settlement> existing = settlementRepository.findBy(SettlementCriteria.byOrderId(cmd.orderId()));
+        List<Settlement> existing = settlementRepository.findBy(Criteria.where("orderId").eq(cmd.orderId()));
         if (!existing.isEmpty()) {
             return SettlementView.from(existing.get(0)); // idempotent — already settled
         }
 
-        Payment payment = paymentRepository.findBy(PaymentCriteria.byOrderId(cmd.orderId())).stream()
-                .findFirst()
+        Payment payment = paymentRepository.findByHoldOrderId(cmd.orderId())
                 .orElseThrow(() -> new PaymentDomainException(PaymentErrorCode.PAYMENT_NOT_FOUND,
                         "No payment holds escrow for order " + cmd.orderId()));
 

@@ -11,11 +11,13 @@ import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Identity;
 import tech.vsf.ptnt.msfw.domain.core.PagedSearchResult;
 import tech.vsf.ptnt.msfw.domain.core.Pagination;
-import tech.vsf.ptnt.msfw.domain.core.Repository;
+import tech.vsf.ptnt.msfw.domain.core.criteria.Condition;
+import tech.vsf.ptnt.msfw.domain.core.criteria.MatchAll;
+import tech.vsf.ptnt.msfw.domain.core.criteria.Operator;
 import vn.marketplace.inventory.domain.stock.management.Stock;
 
-/** Hand-written in-memory {@code Repository<Stock>} fake (preferred over Mockito for new JDKs). */
-class InMemoryStockRepository implements Repository<Stock> {
+/** Hand-written in-memory {@link StockRepository} fake (preferred over Mockito for new JDKs). */
+class InMemoryStockRepository implements StockRepository {
 
     final Map<String, Stock> store = new LinkedHashMap<>();
     final List<Stock> saved = new ArrayList<>();
@@ -37,18 +39,22 @@ class InMemoryStockRepository implements Repository<Stock> {
 
     @Override
     public List<Stock> findBy(Criteria criteria) {
-        StockCriteria c = (StockCriteria) criteria;
-        if (c.skuCodes() != null) {
+        if (criteria instanceof MatchAll) {
+            return new ArrayList<>(store.values());
+        }
+        if (criteria instanceof Condition c && "sku".equals(c.attribute()) && c.operator() == Operator.IN) {
             return store.values().stream()
-                    .filter(s -> c.skuCodes().contains(s.sku().value()))
+                    .filter(s -> c.values().contains(s.sku().value()))
                     .toList();
         }
-        if (c.orderRef() != null) {
-            return store.values().stream()
-                    .filter(s -> s.reservations().stream().anyMatch(r -> r.orderRef().equals(c.orderRef())))
-                    .toList();
-        }
-        return new ArrayList<>(store.values());
+        throw new UnsupportedOperationException("Criteria not supported by this fake: " + criteria);
+    }
+
+    @Override
+    public List<Stock> findByOrderRef(String orderRef) {
+        return store.values().stream()
+                .filter(s -> s.reservations().stream().anyMatch(r -> r.orderRef().equals(orderRef)))
+                .toList();
     }
 
     @Override

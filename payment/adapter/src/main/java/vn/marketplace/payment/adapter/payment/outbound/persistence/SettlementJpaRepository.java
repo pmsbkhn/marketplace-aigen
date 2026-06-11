@@ -1,19 +1,12 @@
 package vn.marketplace.payment.adapter.payment.outbound.persistence;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-
+import tech.vsf.ptnt.springcore.persistence.JpaOaRepository;
 import vn.marketplace.payment.adapter.payment.outbound.persistence.entity.SettlementEntity;
 
-public interface SettlementJpaRepository extends JpaRepository<SettlementEntity, Long> {
-
-    Optional<SettlementEntity> findBySettlementId(String settlementId);
-
-    Optional<SettlementEntity> findByOrderId(String orderId);
-
-    List<SettlementEntity> findByMerchantId(String merchantId);
-
-    void deleteBySettlementId(String settlementId);
+/**
+ * Spring Data contract behind {@code SettlementOa}. All lookups (settlementId, orderId, merchantId)
+ * are root attributes, fully covered by the inherited Specification executor ({@code Criteria} DSL)
+ * — no hand-written queries.
+ */
+public interface SettlementJpaRepository extends JpaOaRepository<SettlementEntity> {
 }

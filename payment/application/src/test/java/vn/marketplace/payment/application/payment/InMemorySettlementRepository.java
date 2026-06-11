@@ -12,6 +12,9 @@ import tech.vsf.ptnt.msfw.domain.core.Identity;
 import tech.vsf.ptnt.msfw.domain.core.PagedSearchResult;
 import tech.vsf.ptnt.msfw.domain.core.Pagination;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
+import tech.vsf.ptnt.msfw.domain.core.criteria.Condition;
+import tech.vsf.ptnt.msfw.domain.core.criteria.MatchAll;
+import tech.vsf.ptnt.msfw.domain.core.criteria.Operator;
 import vn.marketplace.payment.domain.payment.management.Settlement;
 
 /** Hand-written in-memory {@code Repository<Settlement>} fake. */
@@ -37,11 +40,22 @@ class InMemorySettlementRepository implements Repository<Settlement> {
 
     @Override
     public List<Settlement> findBy(Criteria criteria) {
-        SettlementCriteria c = (SettlementCriteria) criteria;
-        return store.values().stream()
-                .filter(s -> c.orderId() == null || c.orderId().equals(s.orderId()))
-                .filter(s -> c.merchantId() == null || c.merchantId().equals(s.merchantId().value()))
-                .toList();
+        if (criteria instanceof MatchAll) {
+            return new ArrayList<>(store.values());
+        }
+        if (criteria instanceof Condition c && c.operator() == Operator.EQ) {
+            return switch (c.attribute()) {
+                case "orderId" -> store.values().stream()
+                        .filter(s -> c.singleValue().equals(s.orderId()))
+                        .toList();
+                case "merchantId" -> store.values().stream()
+                        .filter(s -> c.singleValue().equals(s.merchantId().value()))
+                        .toList();
+                default -> throw new UnsupportedOperationException(
+                        "Attribute not supported by this fake: " + c.attribute());
+            };
+        }
+        throw new UnsupportedOperationException("Criteria not supported by this fake: " + criteria);
     }
 
     @Override

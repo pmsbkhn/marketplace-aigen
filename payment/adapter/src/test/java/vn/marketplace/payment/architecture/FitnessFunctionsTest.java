@@ -73,9 +73,10 @@ class FitnessFunctionsTest {
                     @Override
                     public void check(JavaMethod method, ConditionEvents events) {
                         boolean writesState = method.getMethodCallsFromSelf().stream().anyMatch(call -> {
-                            String owner = call.getTargetOwner().getFullName();
                             String name = call.getName();
-                            return owner.equals("tech.vsf.ptnt.msfw.domain.core.Repository")
+                            // the msfw Repository port itself OR any service port extending it
+                            return call.getTargetOwner().isAssignableTo(
+                                            "tech.vsf.ptnt.msfw.domain.core.Repository")
                                     && (name.equals("save") || name.equals("delete"));
                         });
                         if (writesState && !method.isAnnotatedWith(EventPublishHandler.class)) {

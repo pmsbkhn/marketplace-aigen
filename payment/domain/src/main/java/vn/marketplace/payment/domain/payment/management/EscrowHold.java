@@ -26,6 +26,9 @@ public class EscrowHold implements Entity {
     private EscrowStatus status;
     private LocalDateTime releasedAt;
 
+    /** Surrogate key threaded by the persistence adapter (null until first save). */
+    private Long _id;
+
     EscrowHold(EscrowHoldId id, String orderId, MerchantId merchantId, Money amount) {
         if (amount.amount() <= 0) {
             throw new PaymentDomainException(PaymentErrorCode.INVALID_AMOUNT);
@@ -48,9 +51,11 @@ public class EscrowHold implements Entity {
     }
 
     static EscrowHold fromMemento(Payment.HoldMemento m) {
-        return new EscrowHold(new EscrowHoldId(m.holdId()), m.orderId(), new MerchantId(m.merchantId()),
-                Money.of(m.amount(), Currency.of(m.currency())), EscrowStatus.valueOf(m.status()),
-                m.releasedAt());
+        EscrowHold hold = new EscrowHold(new EscrowHoldId(m.holdId()), m.orderId(),
+                new MerchantId(m.merchantId()), Money.of(m.amount(), Currency.of(m.currency())),
+                EscrowStatus.valueOf(m.status()), m.releasedAt());
+        hold.set_id(m._id());
+        return hold;
     }
 
     /** Package-private: only the aggregate root may release (after its PAID guard). Idempotent. */
@@ -85,5 +90,13 @@ public class EscrowHold implements Entity {
 
     public LocalDateTime releasedAt() {
         return releasedAt;
+    }
+
+    public void set_id(Long _id) {
+        this._id = _id;
+    }
+
+    public Long _id() {
+        return _id;
     }
 }

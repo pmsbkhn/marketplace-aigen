@@ -4,22 +4,16 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import tech.vsf.ptnt.springcore.persistence.LongIdJpaEntity;
 
 @Entity
 @Table(name = "delivery_attempts")
 @Getter
 @Setter
-public class DeliveryAttemptEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class DeliveryAttemptEntity extends LongIdJpaEntity {
 
     @Column(name = "attempt_no", nullable = false)
     private int attemptNo;

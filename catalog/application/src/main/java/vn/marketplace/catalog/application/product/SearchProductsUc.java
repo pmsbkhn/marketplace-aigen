@@ -4,7 +4,6 @@ import java.util.List;
 
 import tech.vsf.ptnt.msfw.domain.core.PagedSearchResult;
 import tech.vsf.ptnt.msfw.domain.core.Pagination;
-import tech.vsf.ptnt.msfw.domain.core.Repository;
 import vn.marketplace.catalog.domain.product.management.Product;
 
 /**
@@ -19,9 +18,9 @@ public class SearchProductsUc implements SearchProducts {
     private static final int DEFAULT_PAGE_SIZE = 24;
     private static final int MAX_PAGE_SIZE = 100;
 
-    private final Repository<Product> productRepository;
+    private final ProductRepository productRepository;
 
-    public SearchProductsUc(Repository<Product> productRepository) {
+    public SearchProductsUc(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
 
@@ -30,10 +29,9 @@ public class SearchProductsUc implements SearchProducts {
         int page = Math.max(0, cmd.page());
         int size = cmd.size() <= 0 ? DEFAULT_PAGE_SIZE : Math.min(cmd.size(), MAX_PAGE_SIZE);
 
-        ProductCriteria criteria = ProductCriteria.activeSearch(
-                cmd.query(), cmd.categoryId(), cmd.brandId(), cmd.priceMin(), cmd.priceMax());
-
-        PagedSearchResult<Product> result = productRepository.findBy(criteria, Pagination.of(page, size));
+        PagedSearchResult<Product> result = productRepository.searchActive(
+                cmd.query(), cmd.categoryId(), cmd.brandId(), cmd.priceMin(), cmd.priceMax(),
+                Pagination.of(page, size));
         List<ProductSummaryView> summaries = result.content().stream()
                 .map(ProductViewMapper::toSummary)
                 .toList();

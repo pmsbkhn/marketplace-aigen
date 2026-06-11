@@ -16,6 +16,8 @@ import vn.marketplace.catalog.domain.shared.CatalogErrorCode;
  */
 public class Variant implements Entity {
 
+    /** Surrogate key threaded by the persistence adapter — {@code null} until first persisted. */
+    private Long _id;
     private final VariantId id;
     private final String name;
     private final Map<String, String> attributes;
@@ -33,7 +35,17 @@ public class Variant implements Entity {
 
     static Variant fromMemento(Product.VariantMemento m) {
         List<Sku> skus = m.skus().stream().map(Sku::fromMemento).toList();
-        return new Variant(new VariantId(m.variantId()), m.name(), m.attributes(), skus);
+        Variant variant = new Variant(new VariantId(m.variantId()), m.name(), m.attributes(), skus);
+        variant.set_id(m._id());
+        return variant;
+    }
+
+    public Long _id() {
+        return _id;
+    }
+
+    public void set_id(Long _id) {
+        this._id = _id;
     }
 
     public VariantId id() {

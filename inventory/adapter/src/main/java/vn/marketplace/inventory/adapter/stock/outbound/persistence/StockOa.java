@@ -2,7 +2,6 @@ package vn.marketplace.inventory.adapter.stock.outbound.persistence;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,33 +9,57 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Identity;
-import tech.vsf.ptnt.msfw.domain.core.PagedSearchResult;
-import tech.vsf.ptnt.msfw.domain.core.Pagination;
+import tech.vsf.ptnt.springcore.persistence.AbstractMementoJpaOa;
+import tech.vsf.ptnt.springcore.persistence.JpaOaRepository;
 import vn.marketplace.inventory.adapter.stock.outbound.persistence.entity.ReservationEntity;
 import vn.marketplace.inventory.adapter.stock.outbound.persistence.entity.StockEntity;
-import vn.marketplace.inventory.application.stock.StockCriteria;
+import vn.marketplace.inventory.application.stock.StockRepository;
 import vn.marketplace.inventory.domain.stock.management.Stock;
 
 /**
- * Outbound persistence adapter: maps the {@link Stock} aggregate ↔ JPA entities via the aggregate
- * {@link Stock.Memento}, implementing the msfw {@code Repository<Stock>} port. {@code @Transactional}
- * keeps the session open while the lazy reservations collection is read during reconstruction.
+ * Outbound persistence adapter: maps the {@link Stock} aggregate ↔ JPA entities at the
+ * {@link Stock.Memento} level via msfw's {@code AbstractMementoJpaOa}, which owns the plumbing
+ * (surrogate-key threading, identity lookups, {@code Criteria} → Specification translation, real
+ * DB paging). {@code @Transactional} keeps the session open while the lazy reservations collection
+ * is read during reconstruction.
  *
- * <p>On save the reservations collection is rebuilt from the memento (orphanRemoval syncs the table) —
- * reservations grow and change status over the aggregate's life, unlike Catalog's immutable variants.
+ * <p>On save the reservations collection is rebuilt from the memento (orphanRemoval syncs the
+ * table) — reservations grow and change status over the aggregate's life. {@link #save} also
+ * upserts by SKU: a fresh aggregate ({@code _id == null}) for an existing SKU updates that row
+ * instead of violating the unique index, preserving the legacy adapter's semantics.
  */
 @Repository
 @Transactional
 @RequiredArgsConstructor
-public class StockOa implements tech.vsf.ptnt.msfw.domain.core.Repository<Stock> {
+public class StockOa extends AbstractMementoJpaOa<Stock, Stock.Memento, StockEntity>
+        implements StockRepository {
 
-    private final StockJpaRepository jpa;
+    private final StockJpaRepository stockJpaRepository;
+
+    @Override
+    protected JpaOaRepository<StockEntity> jpa() {
+        return stockJpaRepository;
+    }
 
     @Override
     public void save(Stock aggregate) {
-        Stock.Memento m = aggregate.toMemento();
-        StockEntity entity = jpa.findBySku(m.sku()).orElseGet(StockEntity::new);
+        if (aggregate._id() == null) {
+            findEntity(aggregate.id()).ifPresent(e -> aggregate.set_id(e.getId()));
+        }
+        super.save(aggregate);
+    }
 
+    /** Joins the reservations collection — beyond the Criteria translator, so a derived query. */
+    @Override
+    public List<Stock> findByOrderRef(String orderRef) {
+        return stockJpaRepository.findByOrderRef(orderRef).stream()
+                .map(this::reconstitute)
+                .toList();
+    }
+
+    @Override
+    protected StockEntity fromMemento(Stock.Memento m) {
+        StockEntity entity = new StockEntity();
         entity.setSku(m.sku());
         entity.setMerchantId(m.merchantId());
         entity.setAvailable(m.available());
@@ -45,7 +68,6 @@ public class StockOa implements tech.vsf.ptnt.msfw.domain.core.Repository<Stock>
         entity.setCreatedAt(m.createdAt());
         entity.setUpdatedAt(m.updatedAt());
 
-        entity.getReservations().clear();
         for (Stock.ReservationMemento rm : m.reservations()) {
             ReservationEntity re = new ReservationEntity();
             re.setReservationId(rm.reservationId());
@@ -56,54 +78,28 @@ public class StockOa implements tech.vsf.ptnt.msfw.domain.core.Repository<Stock>
             re.setExpiresAt(rm.expiresAt());
             entity.getReservations().add(re);
         }
-
-        StockEntity saved = jpa.save(entity);
-        aggregate.set_id(saved.getId());
+        return entity;
     }
 
     @Override
-    public <U extends Identity<?>> Optional<Stock> findById(U id) {
-        return jpa.findBySku(String.valueOf(id.value())).map(this::toDomain);
-    }
-
-    @Override
-    public List<Stock> findBy(Criteria criteria) {
-        StockCriteria c = (StockCriteria) criteria;
-        List<StockEntity> entities;
-        if (c.skuCodes() != null) {
-            entities = c.skuCodes().isEmpty() ? List.of() : jpa.findBySkuIn(c.skuCodes());
-        } else if (c.orderRef() != null) {
-            entities = jpa.findByOrderRef(c.orderRef());
-        } else {
-            entities = jpa.findAll();
-        }
-        return entities.stream().map(this::toDomain).toList();
-    }
-
-    @Override
-    public PagedSearchResult<Stock> findBy(Criteria criteria, Pagination pagination) {
-        List<Stock> all = findBy(criteria);
-        int from = Math.min(pagination.offset(), all.size());
-        int to = Math.min(from + pagination.size(), all.size());
-        List<Stock> page = new ArrayList<>(all.subList(from, to));
-        Optional<Integer> nextPage = to < all.size() ? Optional.of(pagination.page() + 1) : Optional.empty();
-        return new PagedSearchResult<>(page, pagination.page(), pagination.size(), nextPage);
-    }
-
-    @Override
-    public <U extends Identity<?>> void delete(U id) {
-        jpa.deleteBySku(String.valueOf(id.value()));
-    }
-
-    private Stock toDomain(StockEntity e) {
+    protected Stock.Memento toMemento(StockEntity e) {
         List<Stock.ReservationMemento> reservations = new ArrayList<>();
         for (ReservationEntity re : e.getReservations()) {
             reservations.add(new Stock.ReservationMemento(re.getReservationId(), re.getOrderRef(),
                     re.getSku(), re.getQty(), re.getStatus(), re.getExpiresAt()));
         }
-        Stock.Memento m = new Stock.Memento(e.getId(), e.getSku(), e.getMerchantId(),
+        return new Stock.Memento(e.getId(), e.getSku(), e.getMerchantId(),
                 e.getAvailable(), e.getReserved(), e.getVersion(),
                 e.getCreatedAt(), e.getUpdatedAt(), reservations);
-        return Stock.fromMemento(m);
+    }
+
+    @Override
+    protected Stock restore(Stock.Memento memento) {
+        return Stock.restore(memento);
+    }
+
+    @Override
+    protected Criteria identityCriteria(Identity<?> id) {
+        return Criteria.where("sku").eq(id.value());
     }
 }

@@ -3,6 +3,7 @@ package vn.marketplace.payment.application.payment;
 import java.util.List;
 import java.util.UUID;
 
+import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.msfw.event.handling.EventPublishHandler;
 import tech.vsf.ptnt.msfw.outbox.store.JsonEventStoreProcessor;
@@ -34,7 +35,7 @@ public class InitEscrowUc implements InitEscrow {
     @Override
     @EventPublishHandler(eventProcessors = {JsonEventStoreProcessor.class})
     public InitEscrowResult execute(InitEscrowCmd cmd) {
-        List<Payment> existing = paymentRepository.findBy(PaymentCriteria.byOrderRef(cmd.orderRef()));
+        List<Payment> existing = paymentRepository.findBy(Criteria.where("orderRef").eq(cmd.orderRef()));
         if (!existing.isEmpty()) {
             Payment payment = existing.get(0);
             return new InitEscrowResult(payment.id().value(), payment.paymentUrl(),

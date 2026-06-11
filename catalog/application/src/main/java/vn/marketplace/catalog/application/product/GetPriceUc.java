@@ -3,26 +3,27 @@ package vn.marketplace.catalog.application.product;
 import java.util.ArrayList;
 import java.util.List;
 
-import tech.vsf.ptnt.msfw.domain.core.Repository;
 import vn.marketplace.catalog.domain.product.SkuCode;
 import vn.marketplace.catalog.domain.product.management.Product;
 import vn.marketplace.catalog.domain.product.management.Sku;
 
 /**
  * Reads price from the DB source of truth (never ES) for checkout consistency. Read-only — no
- * {@link tech.vsf.ptnt.msfw.event.handling.EventPublishHandler}.
+ * {@link tech.vsf.ptnt.msfw.event.handling.EventPublishHandler}. Uses the catalog-specific
+ * {@link ProductRepository} port because the SKU lookup joins the variants/skus collections —
+ * beyond what the generic {@code Criteria} DSL can express.
  */
 public class GetPriceUc implements GetPrice {
 
-    private final Repository<Product> productRepository;
+    private final ProductRepository productRepository;
 
-    public GetPriceUc(Repository<Product> productRepository) {
+    public GetPriceUc(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
 
     @Override
     public List<SkuPriceView> execute(GetPriceCmd cmd) {
-        List<Product> products = productRepository.findBy(ProductCriteria.bySkuCodes(cmd.skuCodes()));
+        List<Product> products = productRepository.findBySkuCodes(cmd.skuCodes());
         List<SkuPriceView> result = new ArrayList<>();
 
         for (String code : cmd.skuCodes()) {

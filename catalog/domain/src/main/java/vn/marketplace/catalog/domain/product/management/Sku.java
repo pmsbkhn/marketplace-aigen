@@ -17,6 +17,8 @@ import vn.marketplace.catalog.domain.shared.CatalogErrorCode;
  */
 public class Sku implements Entity {
 
+    /** Surrogate key threaded by the persistence adapter — {@code null} until first persisted. */
+    private Long _id;
     private final SkuId id;
     private final SkuCode code;
     private Money price;
@@ -34,7 +36,16 @@ public class Sku implements Entity {
     static Sku fromMemento(Product.SkuMemento m) {
         Sku sku = new Sku(new SkuId(m.skuId()), new SkuCode(m.skuCode()),
                 m.priceAmount(), Currency.of(m.currency()));
+        sku.set_id(m._id());
         return sku;
+    }
+
+    public Long _id() {
+        return _id;
+    }
+
+    public void set_id(Long _id) {
+        this._id = _id;
     }
 
     void changePrice(long newAmount) {

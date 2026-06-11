@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import tech.vsf.ptnt.msfw.domain.core.Aggregate;
+import tech.vsf.ptnt.msfw.domain.core.Snapshotable;
 import vn.marketplace.notification.domain.delivery.Channel;
 import vn.marketplace.notification.domain.delivery.NotificationId;
 import vn.marketplace.notification.domain.delivery.NotificationStatus;
@@ -28,7 +29,7 @@ import vn.marketplace.notification.domain.shared.NotificationErrorCode;
  * values (the application layer ciphers sensitive data such as OTP before construction — L4), so the
  * aggregate never carries plaintext. {@code idempotencyKey} is immutable.
  */
-public class Notification extends Aggregate<NotificationId> {
+public class Notification extends Aggregate<NotificationId> implements Snapshotable<Notification.Memento> {
 
     private final String idempotencyKey;
     private final String userId;
@@ -189,14 +190,15 @@ public class Notification extends Aggregate<NotificationId> {
         return updatedAt;
     }
 
-    // ---- Memento (persistence reconstruction) ----
+    // ---- Memento (persistence reconstruction — msfw Snapshotable contract) ----
 
-    public static Notification fromMemento(Memento m) {
+    public static Notification restore(Memento m) {
         List<DeliveryAttempt> attempts = m.attempts().stream().map(DeliveryAttempt::fromMemento).toList();
         return new Notification(m, attempts);
     }
 
-    public Memento toMemento() {
+    @Override
+    public Memento snapshot() {
         List<AttemptMemento> attemptMementos = new ArrayList<>();
         for (DeliveryAttempt a : attempts) {
             attemptMementos.add(new AttemptMemento(a.attemptNo(), a.provider(), a.result(), a.attemptedAt()));

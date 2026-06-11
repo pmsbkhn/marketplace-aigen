@@ -144,10 +144,10 @@ class ProductTest {
         Product.Memento memento = new Product.Memento(
                 1L, "P-1", "M-123", "T-Shirt", "desc", "PENDING", "B-1", "C-1",
                 true, "creator", null, null, now, now, null,
-                List.of(new Product.VariantMemento("V-1", "red-M", Map.of(),
-                        List.of(new Product.SkuMemento("S-1", "SKU-1", 250_000, "VND")))),
+                List.of(new Product.VariantMemento(10L, "V-1", "red-M", Map.of(),
+                        List.of(new Product.SkuMemento(100L, "S-1", "SKU-1", 250_000, "VND")))),
                 List.of());
-        Product product = Product.fromMemento(memento);
+        Product product = Product.restore(memento);
         DomainEventPublisher.clear();
 
         product.approve(ADMIN);

@@ -5,13 +5,11 @@ import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import tech.vsf.ptnt.springcore.persistence.LongIdJpaEntity;
 import vn.marketplace.payment.adapter.payment.outbound.persistence.BankAccountCryptoConverter;
 
 /**
@@ -27,11 +25,7 @@ import vn.marketplace.payment.adapter.payment.outbound.persistence.BankAccountCr
 })
 @Getter
 @Setter
-public class SettlementEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class SettlementEntity extends LongIdJpaEntity {
 
     @Column(name = "settlement_id", nullable = false, unique = true)
     private String settlementId;

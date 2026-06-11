@@ -12,6 +12,9 @@ import tech.vsf.ptnt.msfw.domain.core.Identity;
 import tech.vsf.ptnt.msfw.domain.core.PagedSearchResult;
 import tech.vsf.ptnt.msfw.domain.core.Pagination;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
+import tech.vsf.ptnt.msfw.domain.core.criteria.Condition;
+import tech.vsf.ptnt.msfw.domain.core.criteria.MatchAll;
+import tech.vsf.ptnt.msfw.domain.core.criteria.Operator;
 import vn.marketplace.notification.domain.delivery.management.Notification;
 
 /** Hand-written in-memory {@code Repository<Notification>} fake (preferred over Mockito for new JDKs). */
@@ -37,10 +40,21 @@ class InMemoryNotificationRepository implements Repository<Notification> {
 
     @Override
     public List<Notification> findBy(Criteria criteria) {
-        NotificationCriteria c = (NotificationCriteria) criteria;
         return store.values().stream()
-                .filter(n -> c.idempotencyKey() == null || c.idempotencyKey().equals(n.idempotencyKey()))
+                .filter(n -> matches(criteria, n))
                 .toList();
+    }
+
+    /** Interprets the msfw Criteria DSL tree for the attributes the use-cases actually query. */
+    private boolean matches(Criteria criteria, Notification n) {
+        if (criteria instanceof MatchAll) {
+            return true;
+        }
+        if (criteria instanceof Condition c
+                && "idempotencyKey".equals(c.attribute()) && c.operator() == Operator.EQ) {
+            return c.singleValue().equals(n.idempotencyKey());
+        }
+        throw new IllegalArgumentException("Unsupported criteria in fake: " + criteria);
     }
 
     @Override

@@ -6,6 +6,7 @@ import java.util.List;
 
 import tech.vsf.ptnt.msfw.domain.core.Aggregate;
 import tech.vsf.ptnt.msfw.domain.core.DomainEventPublisher;
+import tech.vsf.ptnt.msfw.domain.core.Snapshotable;
 import tech.vsf.ptnt.msfw.domain.type.DTime;
 import vn.marketplace.payment.domain.payment.Currency;
 import vn.marketplace.payment.domain.payment.EscrowHoldId;
@@ -34,7 +35,7 @@ import vn.marketplace.payment.domain.shared.PaymentErrorCode;
  * </ol>
  * {@code PaymentReceived}/{@code PaymentFailed} are published exactly on the matching transition.
  */
-public class Payment extends Aggregate<PaymentId> {
+public class Payment extends Aggregate<PaymentId> implements Snapshotable<Payment.Memento> {
 
     private final String orderRef;
     private final Money amount;
@@ -206,18 +207,20 @@ public class Payment extends Aggregate<PaymentId> {
     public record NewAllocation(String holdId, String orderId, String merchantId, long amount) {
     }
 
-    // ---- Memento (persistence reconstruction) ----
+    // ---- Memento (persistence reconstruction, msfw Snapshotable) ----
 
-    public static Payment fromMemento(Memento m) {
+    public static Payment restore(Memento m) {
         List<EscrowHold> holds = m.holds().stream().map(EscrowHold::fromMemento).toList();
         return new Payment(m, holds);
     }
 
-    public Memento toMemento() {
+    @Override
+    public Memento snapshot() {
         List<HoldMemento> holdMementos = new ArrayList<>();
         for (EscrowHold h : holds) {
             holdMementos.add(new HoldMemento(h.id().value(), h.orderId(), h.merchantId().value(),
-                    h.amount().amount(), h.amount().currency().name(), h.status().name(), h.releasedAt()));
+                    h.amount().amount(), h.amount().currency().name(), h.status().name(), h.releasedAt(),
+                    h._id()));
         }
         return new Memento(_id(), id.value(), orderRef, amount.amount(), amount.currency().name(),
                 status.name(), gatewayTxnId, paymentUrl, failReason, createdAt, paidAt, updatedAt,
@@ -240,6 +243,6 @@ public class Payment extends Aggregate<PaymentId> {
     }
 
     public record HoldMemento(String holdId, String orderId, String merchantId, long amount,
-                              String currency, String status, LocalDateTime releasedAt) {
+                              String currency, String status, LocalDateTime releasedAt, Long _id) {
     }
 }

@@ -30,6 +30,7 @@ import vn.marketplace.catalog.application.product.GetProduct;
 import vn.marketplace.catalog.application.product.GetProductUc;
 import vn.marketplace.catalog.application.product.ModerateProduct;
 import vn.marketplace.catalog.application.product.ModerateProductUc;
+import vn.marketplace.catalog.application.product.ProductRepository;
 import vn.marketplace.catalog.application.product.SearchProducts;
 import vn.marketplace.catalog.application.product.SearchProductsUc;
 import vn.marketplace.catalog.application.product.UpdateSkuPrice;
@@ -103,7 +104,7 @@ public class CatalogStandaloneConfiguration {
     }
 
     @Bean
-    public GetPrice getPrice(Repository<Product> productRepository) {
+    public GetPrice getPrice(ProductRepository productRepository) {
         return new GetPriceUc(productRepository);
     }
 
@@ -113,7 +114,7 @@ public class CatalogStandaloneConfiguration {
     }
 
     @Bean
-    public SearchProducts searchProducts(Repository<Product> productRepository) {
+    public SearchProducts searchProducts(ProductRepository productRepository) {
         return new SearchProductsUc(productRepository);
     }
 

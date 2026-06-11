@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import tech.vsf.ptnt.msfw.domain.core.Aggregate;
+import tech.vsf.ptnt.msfw.domain.core.Snapshotable;
 import vn.marketplace.inventory.domain.stock.MerchantId;
 import vn.marketplace.inventory.domain.stock.ReservationId;
 import vn.marketplace.inventory.domain.stock.SkuCode;
@@ -30,7 +31,7 @@ import vn.marketplace.inventory.domain.shared.InventoryErrorCode;
  * </ul>
  * State changes only ever happen through the verb methods below — there are no public setters.
  */
-public class Stock extends Aggregate<SkuCode> {
+public class Stock extends Aggregate<SkuCode> implements Snapshotable<Stock.Memento> {
 
     private final SkuCode sku;
     private final MerchantId merchantId;
@@ -186,12 +187,13 @@ public class Stock extends Aggregate<SkuCode> {
 
     // ---- Memento (persistence reconstruction) ----
 
-    public static Stock fromMemento(Memento m) {
+    public static Stock restore(Memento m) {
         List<Reservation> reservations = m.reservations().stream().map(Reservation::fromMemento).toList();
         return new Stock(m, reservations);
     }
 
-    public Memento toMemento() {
+    @Override
+    public Memento snapshot() {
         List<ReservationMemento> reservationMementos = new ArrayList<>();
         for (Reservation r : reservations) {
             reservationMementos.add(new ReservationMemento(r.id().value(), r.orderRef(), r.sku().value(),

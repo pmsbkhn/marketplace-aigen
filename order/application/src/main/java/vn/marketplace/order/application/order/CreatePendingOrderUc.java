@@ -3,6 +3,7 @@ package vn.marketplace.order.application.order;
 import java.util.List;
 import java.util.UUID;
 
+import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.msfw.event.handling.EventPublishHandler;
 import tech.vsf.ptnt.msfw.outbox.store.JsonEventStoreProcessor;
@@ -30,7 +31,7 @@ public class CreatePendingOrderUc implements CreatePendingOrder {
     @Override
     @EventPublishHandler(eventProcessors = {JsonEventStoreProcessor.class})
     public OrderIdView execute(CreatePendingOrderCmd cmd) {
-        List<Order> existing = orderRepository.findBy(OrderCriteria.byCheckoutRef(cmd.checkoutRef()));
+        List<Order> existing = orderRepository.findBy(Criteria.where("checkoutRef").eq(cmd.checkoutRef()));
         if (!existing.isEmpty()) {
             Order order = existing.get(0);
             return new OrderIdView(order.id().value(), order.status().name(), order.totalAmount().amount());

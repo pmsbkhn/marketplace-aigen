@@ -1,5 +1,6 @@
 package vn.marketplace.payment.application.payment;
 
+import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.msfw.event.handling.EventPublishHandler;
 import tech.vsf.ptnt.msfw.outbox.store.JsonEventStoreProcessor;
@@ -28,7 +29,7 @@ public class ProcessPayoutUc implements ProcessPayout {
     @Override
     @EventPublishHandler(eventProcessors = {JsonEventStoreProcessor.class})
     public SettlementView execute(ProcessPayoutCmd cmd) {
-        Settlement settlement = settlementRepository.findBy(SettlementCriteria.byOrderId(cmd.orderId())).stream()
+        Settlement settlement = settlementRepository.findBy(Criteria.where("orderId").eq(cmd.orderId())).stream()
                 .findFirst()
                 .orElseThrow(() -> new PaymentDomainException(PaymentErrorCode.SETTLEMENT_NOT_FOUND,
                         "No settlement for order " + cmd.orderId()));

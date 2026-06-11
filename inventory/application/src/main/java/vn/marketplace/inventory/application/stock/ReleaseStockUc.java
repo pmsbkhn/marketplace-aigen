@@ -2,7 +2,6 @@ package vn.marketplace.inventory.application.stock;
 
 import java.util.List;
 
-import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.msfw.event.handling.EventPublishHandler;
 import tech.vsf.ptnt.msfw.outbox.store.JsonEventStoreProcessor;
 import vn.marketplace.inventory.domain.stock.management.Stock;
@@ -14,9 +13,9 @@ import vn.marketplace.inventory.domain.stock.management.Stock;
  */
 public class ReleaseStockUc implements ReleaseStock {
 
-    private final Repository<Stock> stockRepository;
+    private final StockRepository stockRepository;
 
-    public ReleaseStockUc(Repository<Stock> stockRepository) {
+    public ReleaseStockUc(StockRepository stockRepository) {
         this.stockRepository = stockRepository;
     }
 
@@ -24,7 +23,7 @@ public class ReleaseStockUc implements ReleaseStock {
     @EventPublishHandler(eventProcessors = {JsonEventStoreProcessor.class})
     public void execute(ReleaseStockCmd cmd) {
         String orderRef = cmd.reservationId();
-        List<Stock> stocks = stockRepository.findBy(StockCriteria.byOrderRef(orderRef));
+        List<Stock> stocks = stockRepository.findByOrderRef(orderRef);
         for (Stock stock : stocks) {
             stock.releaseReservation(orderRef);
             stockRepository.save(stock);

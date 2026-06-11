@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.msfw.event.handling.EventPublishHandler;
 import tech.vsf.ptnt.msfw.outbox.store.JsonEventStoreProcessor;
@@ -33,7 +34,7 @@ public class AcceptNotificationUc implements AcceptNotification {
     @EventPublishHandler(eventProcessors = {JsonEventStoreProcessor.class})
     public NotificationIdView execute(AcceptNotificationCmd cmd) {
         List<Notification> existing =
-                notificationRepository.findBy(NotificationCriteria.byIdempotencyKey(cmd.idempotencyKey()));
+                notificationRepository.findBy(Criteria.where("idempotencyKey").eq(cmd.idempotencyKey()));
         if (!existing.isEmpty()) {
             Notification n = existing.get(0);
             return new NotificationIdView(n.id().value(), n.status().name());

@@ -20,6 +20,7 @@ import vn.marketplace.inventory.application.stock.ReleaseStock;
 import vn.marketplace.inventory.application.stock.ReleaseStockUc;
 import vn.marketplace.inventory.application.stock.ReserveStock;
 import vn.marketplace.inventory.application.stock.ReserveStockUc;
+import vn.marketplace.inventory.application.stock.StockRepository;
 import vn.marketplace.inventory.application.stock.UpdateMerchantStock;
 import vn.marketplace.inventory.application.stock.UpdateMerchantStockUc;
 import vn.marketplace.inventory.domain.stock.management.Stock;
@@ -42,7 +43,7 @@ public class AdapterConfiguration {
     }
 
     @Bean
-    public ReleaseStock releaseStock(Repository<Stock> stockRepository) {
+    public ReleaseStock releaseStock(StockRepository stockRepository) {
         return new ReleaseStockUc(stockRepository);
     }
 

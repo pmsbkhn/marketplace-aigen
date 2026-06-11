@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import tech.vsf.ptnt.msfw.domain.core.Aggregate;
 import tech.vsf.ptnt.msfw.domain.core.DomainEventPublisher;
+import tech.vsf.ptnt.msfw.domain.core.Snapshotable;
 import tech.vsf.ptnt.msfw.domain.type.DTime;
 import vn.marketplace.order.domain.orderlifecycle.BuyerId;
 import vn.marketplace.order.domain.orderlifecycle.Currency;
@@ -35,7 +36,7 @@ import vn.marketplace.order.domain.shared.OrderErrorCode;
  * append-only status history, immutable {@code buyerId}/{@code merchantId}/{@code checkoutRef}.
  * {@code OrderCompleted}/{@code OrderCancelled} are published exactly on the matching transition.
  */
-public class Order extends Aggregate<OrderId> {
+public class Order extends Aggregate<OrderId> implements Snapshotable<Order.Memento> {
 
     private final String checkoutRef;
     private final BuyerId buyerId;
@@ -221,13 +222,14 @@ public class Order extends Aggregate<OrderId> {
 
     // ---- Memento (persistence reconstruction) ----
 
-    public static Order fromMemento(Memento m) {
+    public static Order restore(Memento m) {
         List<OrderItem> items = m.items().stream().map(OrderItem::fromMemento).toList();
         List<OrderStatusHistory> history = m.statusHistory().stream().map(OrderStatusHistory::fromMemento).toList();
         return new Order(m, items, history);
     }
 
-    public Memento toMemento() {
+    @Override
+    public Memento snapshot() {
         List<OrderItemMemento> itemMementos = new ArrayList<>();
         for (OrderItem i : items) {
             itemMementos.add(new OrderItemMemento(i.id().value(), i.productId(), i.variantId(), i.skuCode(),

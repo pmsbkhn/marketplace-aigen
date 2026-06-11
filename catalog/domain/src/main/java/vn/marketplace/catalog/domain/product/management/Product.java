@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import tech.vsf.ptnt.msfw.domain.core.Aggregate;
 import tech.vsf.ptnt.msfw.domain.core.DomainEventPublisher;
+import tech.vsf.ptnt.msfw.domain.core.Snapshotable;
 import tech.vsf.ptnt.msfw.domain.type.DTime;
 import vn.marketplace.catalog.domain.product.BrandId;
 import vn.marketplace.catalog.domain.product.CategoryId;
@@ -34,7 +35,7 @@ import vn.marketplace.catalog.domain.shared.CatalogErrorCode;
  * </ul>
  * State is only ever changed through the verb methods below — there are no public setters.
  */
-public class Product extends Aggregate<ProductId> {
+public class Product extends Aggregate<ProductId> implements Snapshotable<Product.Memento> {
 
     private final MerchantId merchantId;
     private String name;
@@ -243,7 +244,7 @@ public class Product extends Aggregate<ProductId> {
 
     // ---- Memento (persistence reconstruction) ----
 
-    public static Product fromMemento(Memento m) {
+    public static Product restore(Memento m) {
         List<Variant> variants = m.variants().stream().map(Variant::fromMemento).toList();
         List<ProductImage> images = m.images().stream()
                 .map(im -> new ProductImage(im.url(), im.sortOrder()))
@@ -251,15 +252,16 @@ public class Product extends Aggregate<ProductId> {
         return new Product(m, variants, images);
     }
 
-    public Memento toMemento() {
+    @Override
+    public Memento snapshot() {
         List<VariantMemento> variantMementos = new ArrayList<>();
         for (Variant v : variants) {
             List<SkuMemento> skuMementos = new ArrayList<>();
             for (Sku s : v.skus()) {
-                skuMementos.add(new SkuMemento(s.id().value(), s.code().value(),
+                skuMementos.add(new SkuMemento(s._id(), s.id().value(), s.code().value(),
                         s.price().amount(), s.price().currency().name()));
             }
-            variantMementos.add(new VariantMemento(v.id().value(), v.name(), v.attributes(), skuMementos));
+            variantMementos.add(new VariantMemento(v._id(), v.id().value(), v.name(), v.attributes(), skuMementos));
         }
         List<ImageMemento> imageMementos = images.stream()
                 .map(im -> new ImageMemento(im.url(), im.sortOrder()))
@@ -290,13 +292,14 @@ public class Product extends Aggregate<ProductId> {
                           List<ImageMemento> images) {
     }
 
-    public record VariantMemento(String variantId,
+    public record VariantMemento(Long _id,
+                                 String variantId,
                                  String name,
                                  Map<String, String> attributes,
                                  List<SkuMemento> skus) {
     }
 
-    public record SkuMemento(String skuId, String skuCode, long priceAmount, String currency) {
+    public record SkuMemento(Long _id, String skuId, String skuCode, long priceAmount, String currency) {
     }
 
     public record ImageMemento(String url, int sortOrder) {

@@ -2,6 +2,7 @@ package vn.marketplace.payment.application.payment;
 
 import java.util.List;
 
+import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.msfw.event.handling.EventPublishHandler;
 import tech.vsf.ptnt.msfw.outbox.store.JsonEventStoreProcessor;
@@ -29,7 +30,7 @@ public class HandleWebhookUc implements HandleWebhook {
     @Override
     @EventPublishHandler(eventProcessors = {JsonEventStoreProcessor.class})
     public void execute(HandleWebhookCmd cmd) {
-        List<Payment> byRef = paymentRepository.findBy(PaymentCriteria.byOrderRef(cmd.orderRef()));
+        List<Payment> byRef = paymentRepository.findBy(Criteria.where("orderRef").eq(cmd.orderRef()));
         if (byRef.isEmpty()) {
             throw new PaymentDomainException(PaymentErrorCode.PAYMENT_NOT_FOUND,
                     "No payment for orderRef " + cmd.orderRef());
@@ -42,7 +43,7 @@ public class HandleWebhookUc implements HandleWebhook {
         }
 
         // Same txn id claimed by a different payment — replay/abuse; DB UNIQUE is the final guard.
-        List<Payment> byTxn = paymentRepository.findBy(PaymentCriteria.byGatewayTxnId(cmd.gatewayTxnId()));
+        List<Payment> byTxn = paymentRepository.findBy(Criteria.where("gatewayTxnId").eq(cmd.gatewayTxnId()));
         if (!byTxn.isEmpty() && !byTxn.get(0).id().equals(payment.id())) {
             throw new PaymentDomainException(PaymentErrorCode.DUPLICATE_GATEWAY_TXN,
                     "Gateway txn " + cmd.gatewayTxnId() + " already consumed by another payment");

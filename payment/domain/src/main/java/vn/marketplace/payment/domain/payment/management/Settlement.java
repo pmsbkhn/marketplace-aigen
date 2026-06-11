@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import tech.vsf.ptnt.msfw.domain.core.Aggregate;
 import tech.vsf.ptnt.msfw.domain.core.DomainEventPublisher;
+import tech.vsf.ptnt.msfw.domain.core.Snapshotable;
 import tech.vsf.ptnt.msfw.domain.type.DTime;
 import vn.marketplace.payment.domain.payment.Currency;
 import vn.marketplace.payment.domain.payment.MerchantId;
@@ -30,7 +31,7 @@ import vn.marketplace.payment.domain.payment.SettlementStatus;
  *       {@code PayoutCompleted} is published exactly once.</li>
  * </ul>
  */
-public class Settlement extends Aggregate<SettlementId> {
+public class Settlement extends Aggregate<SettlementId> implements Snapshotable<Settlement.Memento> {
 
     private final String orderId;
     private final MerchantId merchantId;
@@ -185,13 +186,14 @@ public class Settlement extends Aggregate<SettlementId> {
         return updatedAt;
     }
 
-    // ---- Memento (persistence reconstruction) ----
+    // ---- Memento (persistence reconstruction, msfw Snapshotable) ----
 
-    public static Settlement fromMemento(Memento m) {
+    public static Settlement restore(Memento m) {
         return new Settlement(m, Payout.fromMemento(m.payout()));
     }
 
-    public Memento toMemento() {
+    @Override
+    public Memento snapshot() {
         PayoutMemento payoutMemento = new PayoutMemento(payout.id().value(), payout.merchantId().value(),
                 payout.bankAccount(), payout.amount().amount(), payout.amount().currency().name(),
                 payout.status().name(), payout.submittedAt());

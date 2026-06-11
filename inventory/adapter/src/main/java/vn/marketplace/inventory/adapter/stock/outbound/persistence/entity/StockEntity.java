@@ -7,9 +7,6 @@ import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
@@ -17,6 +14,7 @@ import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import tech.vsf.ptnt.springcore.persistence.LongIdJpaEntity;
 
 @Entity
 @Table(name = "stock", indexes = {
@@ -25,11 +23,7 @@ import lombok.Setter;
 })
 @Getter
 @Setter
-public class StockEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class StockEntity extends LongIdJpaEntity {
 
     @Column(name = "sku", nullable = false, unique = true)
     private String sku;

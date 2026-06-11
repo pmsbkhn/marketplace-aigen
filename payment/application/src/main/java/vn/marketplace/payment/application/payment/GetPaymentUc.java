@@ -1,5 +1,6 @@
 package vn.marketplace.payment.application.payment;
 
+import tech.vsf.ptnt.msfw.domain.core.Criteria;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import vn.marketplace.payment.domain.payment.management.Payment;
 import vn.marketplace.payment.domain.shared.PaymentDomainException;
@@ -16,7 +17,7 @@ public class GetPaymentUc implements GetPayment {
 
     @Override
     public PaymentView execute(GetPaymentCmd cmd) {
-        return paymentRepository.findBy(PaymentCriteria.byOrderRef(cmd.orderRef())).stream()
+        return paymentRepository.findBy(Criteria.where("orderRef").eq(cmd.orderRef())).stream()
                 .findFirst()
                 .map(PaymentView::from)
                 .orElseThrow(() -> new PaymentDomainException(PaymentErrorCode.PAYMENT_NOT_FOUND,

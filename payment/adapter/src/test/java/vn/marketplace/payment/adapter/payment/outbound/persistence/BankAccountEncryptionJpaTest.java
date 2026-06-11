@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import tech.vsf.ptnt.msfw.domain.core.Criteria;
+import tech.vsf.ptnt.springcore.persistence.CriteriaSpecifications;
 import vn.marketplace.payment.adapter.payment.outbound.persistence.entity.SettlementEntity;
 
 /**
@@ -66,7 +68,9 @@ class BankAccountEncryptionJpaTest {
     void jpaReadDecryptsTransparently() {
         settlements.saveAndFlush(settlement());
 
-        SettlementEntity reloaded = settlements.findBySettlementId("SET-1").orElseThrow();
+        SettlementEntity reloaded = settlements
+                .findOne(CriteriaSpecifications.toSpecification(Criteria.where("settlementId").eq("SET-1")))
+                .orElseThrow();
 
         assertEquals(PLAINTEXT_ACCOUNT, reloaded.getBankAccount());
     }
