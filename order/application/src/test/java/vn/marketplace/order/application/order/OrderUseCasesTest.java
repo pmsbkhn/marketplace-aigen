@@ -3,7 +3,9 @@ package vn.marketplace.order.application.order;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +16,7 @@ import tech.vsf.ptnt.msfw.domain.core.DomainEventPublisher;
 import vn.marketplace.order.application.order.CreatePendingOrderCmd.OrderItemInput;
 import vn.marketplace.order.application.order.CreatePendingOrderCmd.ShippingAddressInput;
 import vn.marketplace.order.domain.orderlifecycle.management.OrderCompleted;
+import vn.marketplace.order.domain.orderlifecycle.management.OrderPendingTimedOut;
 import vn.marketplace.order.domain.shared.Actor;
 import vn.marketplace.order.domain.shared.OrderDomainException;
 import vn.marketplace.order.domain.shared.OrderErrorCode;
@@ -28,6 +31,7 @@ class OrderUseCasesTest {
     private CreatePendingOrderUc createUc;
     private TransitionOrderUc transitionUc;
     private CancelOrderUc cancelUc;
+    private ExpirePendingOrderUc expireUc;
     private GetOrderUc getUc;
 
     @BeforeEach
@@ -42,6 +46,7 @@ class OrderUseCasesTest {
         createUc = new CreatePendingOrderUc(repository);
         transitionUc = new TransitionOrderUc(repository);
         cancelUc = new CancelOrderUc(repository);
+        expireUc = new ExpirePendingOrderUc(repository);
         getUc = new GetOrderUc(repository);
     }
 
@@ -79,11 +84,58 @@ class OrderUseCasesTest {
     @Test
     void cancelFromPendingPublishesOrderCancelled() {
         String id = createOrder("CHK-1");
+        DomainEventPublisher.clear(); // drop the creation's pending-timeout timer
 
         cancelUc.execute(new CancelOrderCmd(id, "system", "PAYMENT_TIMEOUT"));
 
         assertEquals("CANCELLED", repository.store.get(id).status().name());
         assertEquals("OrderCancelled", DomainEventPublisher.getEvents().get(0).getClass().getSimpleName());
+    }
+
+    // --- FR13: auto-cancel PENDING past TTL via the delayed timer -----------------------------
+
+    @Test
+    void createArmsTheDelayedPendingTimerOnlyOnRealCreation() {
+        String id = createOrder("CHK-1");
+
+        OrderPendingTimedOut timer = (OrderPendingTimedOut) DomainEventPublisher.getEvents().stream()
+                .filter(e -> e instanceof OrderPendingTimedOut)
+                .findFirst().orElseThrow();
+        assertEquals(id, timer.orderId());
+        assertEquals(CreatePendingOrderUc.DEFAULT_PENDING_EXPIRY_MINUTES,
+                Duration.between(timer.occurredAt().value(), timer.deliverAfter().value()).toMinutes());
+
+        DomainEventPublisher.clear();
+        createOrder("CHK-1"); // idempotent replay must NOT re-arm the timer
+        assertTrue(DomainEventPublisher.getEvents().isEmpty());
+    }
+
+    @Test
+    void timerCancelsAStillPendingOrderWithPendingTimeout() {
+        String id = createOrder("CHK-1");
+        DomainEventPublisher.clear();
+
+        expireUc.execute(new ExpirePendingOrderCmd(id));
+
+        assertEquals("CANCELLED", repository.store.get(id).status().name());
+        assertEquals("OrderCancelled", DomainEventPublisher.getEvents().get(0).getClass().getSimpleName());
+    }
+
+    @Test
+    void staleTimerOnAPaidOrderIsSkipped() {
+        String id = createOrder("CHK-1");
+        transitionUc.execute(new TransitionOrderCmd(id, TransitionEvent.PAYMENT_RECEIVED, "system", null, "e1"));
+        DomainEventPublisher.clear();
+
+        expireUc.execute(new ExpirePendingOrderCmd(id));
+
+        assertEquals("TO_SHIP", repository.store.get(id).status().name());
+        assertTrue(DomainEventPublisher.getEvents().isEmpty(), "a stale timer must not touch a paid order");
+    }
+
+    @Test
+    void timerForAnUnknownOrderIsSkipped() {
+        expireUc.execute(new ExpirePendingOrderCmd("missing")); // must not throw
     }
 
     @Test
