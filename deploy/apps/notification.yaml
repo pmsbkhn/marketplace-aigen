@@ -1,0 +1,71 @@
+# Notification service — meshed `marketplace` namespace, real Postgres (notification_db).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification
+  namespace: marketplace
+  labels: { app: notification }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: notification }
+  template:
+    metadata:
+      labels: { app: notification }
+      annotations:
+        proxy.istio.io/config: '{"holdApplicationUntilProxyStarts": true}'
+    spec:
+      containers:
+        - name: notification
+          image: notification-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
+            - name: DB_HOST
+              value: postgres.infra
+            - name: DB_NAME
+              value: notification_db
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: notification-db, key: username } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: notification-db, key: password } }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits:   { cpu: "2",  memory: 1Gi }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            periodSeconds: 5
+            failureThreshold: 40
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: notification-db
+  namespace: marketplace
+  labels: { app: notification }
+type: Opaque
+stringData:
+  username: marketplace
+  password: marketplace
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification
+  namespace: marketplace
+  labels: { app: notification }
+spec:
+  selector: { app: notification }
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

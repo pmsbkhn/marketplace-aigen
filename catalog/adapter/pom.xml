@@ -15,6 +15,10 @@
 	<name>catalog-service</name>
 	<description>catalog-service</description>
 
+	<properties>
+		<catalog.main-class>vn.marketplace.catalog.adapter.CatalogServiceApplication</catalog.main-class>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>vn.marketplace.catalog</groupId>
@@ -113,6 +117,9 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<!-- Default main = production app; override for the k8s image with
+					     -Dcatalog.main-class=vn.marketplace.catalog.k8s.CatalogK8sApplication -->
+					<mainClass>${catalog.main-class}</mainClass>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
@@ -120,6 +127,13 @@
 						</exclude>
 					</excludes>
 				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

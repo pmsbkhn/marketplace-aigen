@@ -15,6 +15,10 @@
 	<name>notification-service</name>
 	<description>notification-service</description>
 
+	<properties>
+		<app.main-class>vn.marketplace.notification.adapter.NotificationServiceApplication</app.main-class>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>vn.marketplace.notification</groupId>
@@ -119,6 +123,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<mainClass>${app.main-class}</mainClass>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
@@ -126,6 +131,13 @@
 						</exclude>
 					</excludes>
 				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

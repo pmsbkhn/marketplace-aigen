@@ -1,0 +1,8 @@
+# k8s profile bootstrap: no Spring Cloud Config server in-cluster — config from this jar's
+# application-k8s.properties + env. Loaded via spring.cloud.bootstrap.name=bootstrap-k8s.
+spring:
+  config:
+    import: "optional:configserver:http://localhost:8071"
+  cloud:
+    config:
+      enabled: false

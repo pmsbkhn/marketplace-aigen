@@ -1,11 +1,15 @@
 package vn.marketplace.checkout.application.checkout;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import tech.vsf.ptnt.msfw.domain.workflow.CompensatingWorkflow;
+import tech.vsf.ptnt.msfw.domain.workflow.WorkflowContext;
+import tech.vsf.ptnt.msfw.domain.workflow.WorkflowObserver;
 import vn.marketplace.checkout.application.checkout.CatalogPort.SkuPriceDto;
 import vn.marketplace.checkout.application.checkout.CheckoutSessionPort.CheckoutSession;
 import vn.marketplace.checkout.application.checkout.InventoryPort.ReservationDto;
@@ -42,8 +46,14 @@ import vn.marketplace.checkout.domain.shared.CheckoutErrorCode;
  *       (newest first), release the reservation LAST — strict reverse order (TC-CHK-02); the
  *       failure is cached so the client knows to retry with a fresh key.</li>
  * </ol>
- * No {@code @EventPublishHandler}: Checkout persists nothing through an msfw Repository and
- * publishes no domain events — its durable effects live in the downstream contexts.
+ * The step sequence and the reverse-order compensation run on msfw's
+ * {@link CompensatingWorkflow}: each step's compensation is declared next to it, a failing
+ * compensation never stops the remaining ones (it rides the original failure as a suppressed
+ * exception → the COMPENSATION INCOMPLETE path), and runs are observable as
+ * {@code msfw.workflow.runs} when a {@link WorkflowObserver} is wired.
+ *
+ * <p>No {@code @EventPublishHandler}: Checkout persists nothing through an msfw Repository and
+ * publishes no domain events — its durable effects live in the downstream contexts.</p>
  */
 public class SubmitCheckoutUc implements SubmitCheckout {
 
@@ -55,10 +65,19 @@ public class SubmitCheckoutUc implements SubmitCheckout {
     private final OrderSplitter splitter = new OrderSplitter();
     private final int maxItemsPerCart;
     private final int maxMerchantsPerCart;
+    private final CompensatingWorkflow workflow;
 
     public SubmitCheckoutUc(CatalogPort catalog, InventoryPort inventory, OrderPort order,
                             PaymentPort payment, CheckoutSessionPort sessions,
                             int maxItemsPerCart, int maxMerchantsPerCart) {
+        this(catalog, inventory, order, payment, sessions, maxItemsPerCart, maxMerchantsPerCart,
+                WorkflowObserver.NOOP);
+    }
+
+    public SubmitCheckoutUc(CatalogPort catalog, InventoryPort inventory, OrderPort order,
+                            PaymentPort payment, CheckoutSessionPort sessions,
+                            int maxItemsPerCart, int maxMerchantsPerCart,
+                            WorkflowObserver workflowObserver) {
         this.catalog = catalog;
         this.inventory = inventory;
         this.order = order;
@@ -66,6 +85,7 @@ public class SubmitCheckoutUc implements SubmitCheckout {
         this.sessions = sessions;
         this.maxItemsPerCart = maxItemsPerCart;
         this.maxMerchantsPerCart = maxMerchantsPerCart;
+        this.workflow = buildWorkflow(workflowObserver);
     }
 
     @Override
@@ -91,49 +111,33 @@ public class SubmitCheckoutUc implements SubmitCheckout {
     private CheckoutResultView runSaga(SubmitCheckoutCmd cmd) {
         CheckoutSaga saga = CheckoutSaga.start(new IdempotencyKey(cmd.idempotencyKey()), cmd.buyerId());
 
-        // ---- PRICING: Catalog is the only price authority (TC-CHK-03) ----
+        // ---- PRICING: Catalog is the only price authority (TC-CHK-03); no side effects yet ----
         CartSnapshot cart = priceCart(cmd);
         List<MerchantGroup> groups = splitter.split(cart);
         if (groups.size() > maxMerchantsPerCart) {
             throw new CheckoutDomainException(CheckoutErrorCode.TOO_MANY_MERCHANTS);
         }
 
-        // ---- RESERVING: all-or-nothing; a shortage holds nothing → fail fast, no compensation ----
-        saga.markReserving();
-        ReservationDto reservation = inventory.reserveStock(cmd.idempotencyKey(), aggregateBySku(cart));
-        if (!reservation.allReserved()) {
-            saga.fail("OUT_OF_STOCK");
-            throw new CheckoutDomainException(CheckoutErrorCode.OUT_OF_STOCK,
-                    "Out of stock: " + reservation.shortages());
-        }
-
-        // ---- ORDERING + ESCROWING: side effects exist now → compensate in reverse on failure ----
-        List<String> createdOrderIds = new ArrayList<>();
         try {
-            saga.markOrdering();
-            Map<String, String> orderIdByMerchant = new LinkedHashMap<>();
-            for (MerchantGroup group : groups) {
-                String orderId = order.createPendingOrder(toCreateOrder(cmd, group));
-                createdOrderIds.add(orderId);
-                orderIdByMerchant.put(group.merchantId(), orderId);
-            }
-
-            saga.markEscrowing(createdOrderIds);
-            List<EscrowAllocationDto> allocations = groups.stream()
-                    .map(g -> new EscrowAllocationDto(orderIdByMerchant.get(g.merchantId()),
-                            g.merchantId(), g.subtotal().amount()))
-                    .toList();
-            long grandTotal = cart.grandTotal().amount();
-            EscrowDto escrow = payment.initEscrow(cmd.idempotencyKey(), grandTotal,
-                    cart.grandTotal().currency().name(), allocations, cmd.buyerId());
-
-            saga.complete(escrow.paymentUrl());
-            sessions.saveCompleted(cmd.idempotencyKey(), cmd.buyerId(), createdOrderIds,
-                    escrow.paymentUrl(), grandTotal);
-            return new CheckoutResultView(escrow.paymentUrl(), createdOrderIds, grandTotal);
+            WorkflowContext result = workflow.execute(ctx -> {
+                ctx.put("cmd", cmd).put("saga", saga).put("cart", cart).put("groups", groups);
+            });
+            List<String> orderIds = result.require("orderIds");
+            EscrowDto escrow = result.require("escrow");
+            return new CheckoutResultView(escrow.paymentUrl(), orderIds, cart.grandTotal().amount());
 
         } catch (RuntimeException stepFailure) {
-            compensate(createdOrderIds, reservation.reservationId());
+            if (isOutOfStock(stepFailure)) {
+                // All-or-nothing reserve held nothing; NOT cached so a restock retry can succeed.
+                throw stepFailure;
+            }
+            if (stepFailure.getSuppressed().length > 0) {
+                // A compensation failed too — ghost order/reservation: reconciliation runbook,
+                // and NOT cached (the state is unknown, a cached failure could lie).
+                throw new CheckoutDomainException(CheckoutErrorCode.CHECKOUT_FAILED,
+                        "COMPENSATION INCOMPLETE — manual reconciliation required: "
+                                + suppressedMessages(stepFailure));
+            }
             saga.fail(stepFailure.getMessage());
             sessions.saveFailed(cmd.idempotencyKey(), cmd.buyerId(), stepFailure.getMessage());
             throw new CheckoutDomainException(CheckoutErrorCode.CHECKOUT_FAILED,
@@ -143,30 +147,125 @@ public class SubmitCheckoutUc implements SubmitCheckout {
     }
 
     /**
-     * Strict reverse-order compensation (TC-CHK-02): cancel the pending orders FIRST (newest
-     * first), release the stock reservation LAST. Best-effort per step — one failed cancel must
-     * not leave the reservation held forever.
+     * RESERVING → ORDERING → ESCROWING → session save, with TC-CHK-02 compensation declared
+     * step-by-step: a later failure cancels the pending orders FIRST (newest first — the
+     * create-orders compensation), releases the reservation LAST (the reserve-stock one).
      */
-    private void compensate(List<String> createdOrderIds, String reservationId) {
-        List<String> compensationFailures = new ArrayList<>();
+    private CompensatingWorkflow buildWorkflow(WorkflowObserver observer) {
+        return CompensatingWorkflow.named("checkout")
+                .observer(observer)
+                .step("reserve-stock", ctx -> {
+                    SubmitCheckoutCmd cmd = ctx.require("cmd");
+                    CheckoutSaga saga = ctx.require("saga");
+                    CartSnapshot cart = ctx.require("cart");
+                    saga.markReserving();
+                    ReservationDto reservation =
+                            inventory.reserveStock(cmd.idempotencyKey(), aggregateBySku(cart));
+                    if (!reservation.allReserved()) {
+                        saga.fail("OUT_OF_STOCK");
+                        throw new CheckoutDomainException(CheckoutErrorCode.OUT_OF_STOCK,
+                                "Out of stock: " + reservation.shortages());
+                    }
+                    ctx.put("reservation", reservation);
+                }, ctx -> {
+                    ReservationDto reservation = ctx.require("reservation");
+                    inventory.releaseStock(reservation.reservationId());
+                })
+                .step("create-orders", ctx -> {
+                    SubmitCheckoutCmd cmd = ctx.require("cmd");
+                    CheckoutSaga saga = ctx.require("saga");
+                    List<MerchantGroup> groups = ctx.require("groups");
+                    saga.markOrdering();
+                    List<String> createdOrderIds = new ArrayList<>();
+                    Map<String, String> orderIdByMerchant = new LinkedHashMap<>();
+                    ctx.put("orderIds", createdOrderIds).put("orderIdByMerchant", orderIdByMerchant);
+                    try {
+                        for (MerchantGroup group : groups) {
+                            String orderId = order.createPendingOrder(toCreateOrder(cmd, group));
+                            createdOrderIds.add(orderId);
+                            orderIdByMerchant.put(group.merchantId(), orderId);
+                        }
+                    } catch (RuntimeException creationFailure) {
+                        // The step is its own atomicity boundary: undo the partial creations here
+                        // (a failed step's declared compensation does not run).
+                        cancelNewestFirst(createdOrderIds, creationFailure);
+                        throw creationFailure;
+                    }
+                }, ctx -> {
+                    List<String> createdOrderIds = ctx.require("orderIds");
+                    cancelNewestFirst(createdOrderIds, null);
+                })
+                // No escrow-cancel API exists: like before, a failure AFTER initEscrow compensates
+                // orders + reservation only.
+                .step("init-escrow", ctx -> {
+                    SubmitCheckoutCmd cmd = ctx.require("cmd");
+                    CheckoutSaga saga = ctx.require("saga");
+                    CartSnapshot cart = ctx.require("cart");
+                    List<MerchantGroup> groups = ctx.require("groups");
+                    List<String> createdOrderIds = ctx.require("orderIds");
+                    Map<String, String> orderIdByMerchant = ctx.require("orderIdByMerchant");
+                    saga.markEscrowing(createdOrderIds);
+                    List<EscrowAllocationDto> allocations = groups.stream()
+                            .map(g -> new EscrowAllocationDto(orderIdByMerchant.get(g.merchantId()),
+                                    g.merchantId(), g.subtotal().amount()))
+                            .toList();
+                    EscrowDto escrow = payment.initEscrow(cmd.idempotencyKey(),
+                            cart.grandTotal().amount(), cart.grandTotal().currency().name(),
+                            allocations, cmd.buyerId());
+                    ctx.put("escrow", escrow);
+                })
+                .step("complete-session", ctx -> {
+                    SubmitCheckoutCmd cmd = ctx.require("cmd");
+                    CheckoutSaga saga = ctx.require("saga");
+                    CartSnapshot cart = ctx.require("cart");
+                    List<String> createdOrderIds = ctx.require("orderIds");
+                    EscrowDto escrow = ctx.require("escrow");
+                    saga.complete(escrow.paymentUrl());
+                    sessions.saveCompleted(cmd.idempotencyKey(), cmd.buyerId(), createdOrderIds,
+                            escrow.paymentUrl(), cart.grandTotal().amount());
+                })
+                .build();
+    }
+
+    /**
+     * Cancels pending orders newest first, best-effort per order — one failed cancel must not
+     * stop the others (nor, when run as the step compensation, the reservation release that
+     * follows it). Collected failures surface as one exception: suppressed onto {@code carrier}
+     * when undoing a partial creation, or thrown for the workflow to suppress onto the original
+     * step failure.
+     */
+    private void cancelNewestFirst(List<String> createdOrderIds, RuntimeException carrier) {
+        List<String> failures = new ArrayList<>();
         for (int i = createdOrderIds.size() - 1; i >= 0; i--) {
             String orderId = createdOrderIds.get(i);
             try {
                 order.cancelOrder(orderId, "SAGA_COMPENSATION");
             } catch (RuntimeException e) {
-                compensationFailures.add("cancelOrder(" + orderId + "): " + e.getMessage());
+                failures.add("cancelOrder(" + orderId + "): " + e.getMessage());
             }
         }
-        try {
-            inventory.releaseStock(reservationId);
-        } catch (RuntimeException e) {
-            compensationFailures.add("releaseStock(" + reservationId + "): " + e.getMessage());
+        if (failures.isEmpty()) {
+            return;
         }
-        if (!compensationFailures.isEmpty()) {
-            // Surface loudly: a ghost reservation/order needs the reconciliation runbook.
-            throw new CheckoutDomainException(CheckoutErrorCode.CHECKOUT_FAILED,
-                    "COMPENSATION INCOMPLETE — manual reconciliation required: " + compensationFailures);
+        CheckoutDomainException incomplete = new CheckoutDomainException(
+                CheckoutErrorCode.CHECKOUT_FAILED, "Order cancellation incomplete: " + failures);
+        if (carrier != null) {
+            carrier.addSuppressed(incomplete);
+        } else {
+            throw incomplete;
         }
+    }
+
+    private boolean isOutOfStock(RuntimeException failure) {
+        return failure instanceof CheckoutDomainException domainFailure
+                && domainFailure.checkoutErrorCode() == CheckoutErrorCode.OUT_OF_STOCK;
+    }
+
+    private String suppressedMessages(RuntimeException failure) {
+        return Arrays.stream(failure.getSuppressed())
+                .map(Throwable::getMessage)
+                .toList()
+                .toString();
     }
 
     /** Builds the priced cart purely from Catalog data; vetoes unknown/inactive/foreign-merchant SKUs. */

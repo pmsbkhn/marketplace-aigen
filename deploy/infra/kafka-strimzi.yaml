@@ -1,0 +1,46 @@
+# Kafka via the Strimzi operator (installed by `make strimzi`), KRaft mode, single combined node.
+# Strimzi v1 API: per-node resources live on the KafkaNodePool; Kafka.spec.kafka has no `resources`.
+# Bootstrap service for clients: marketplace-kafka-bootstrap.infra:9092
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: combined
+  labels:
+    strimzi.io/cluster: marketplace
+spec:
+  replicas: 1
+  roles:
+    - controller
+    - broker
+  storage:
+    type: ephemeral   # local e2e; switch to persistent-claim for durability
+  resources:
+    requests: { cpu: 250m, memory: 1Gi }
+    limits:   { cpu: "2",  memory: 1536Mi }
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: marketplace
+  annotations:
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
+spec:
+  kafka:
+    version: 4.1.0
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+    config:
+      # Single-broker friendly replication settings.
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1
+  # entityOperator manages topics/users declaratively (KafkaTopic CRs in later phases).
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
