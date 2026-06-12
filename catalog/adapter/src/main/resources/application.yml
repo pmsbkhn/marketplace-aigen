@@ -1,0 +1,11 @@
+# Local defaults — the config server (bootstrap.yml) overrides these per environment.
+# Event routing: where the outbox sender publishes ProductCreated (JSON envelope, no registry).
+app:
+  config:
+    event:
+      routing:
+        events:
+          - source: Catalog
+            type: ProductCreated
+            topic: catalog-events
+            format: JSON

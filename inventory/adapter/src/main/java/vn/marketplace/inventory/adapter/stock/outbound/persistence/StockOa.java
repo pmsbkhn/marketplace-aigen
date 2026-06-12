@@ -64,7 +64,7 @@ public class StockOa extends AbstractMementoJpaOa<Stock, Stock.Memento, StockEnt
         entity.setMerchantId(m.merchantId());
         entity.setAvailable(m.available());
         entity.setReserved(m.reserved());
-        entity.setVersion(m.version());
+        entity.setStockVersion(m.version());
         entity.setCreatedAt(m.createdAt());
         entity.setUpdatedAt(m.updatedAt());
 
@@ -89,7 +89,7 @@ public class StockOa extends AbstractMementoJpaOa<Stock, Stock.Memento, StockEnt
                     re.getSku(), re.getQty(), re.getStatus(), re.getExpiresAt()));
         }
         return new Stock.Memento(e.getId(), e.getSku(), e.getMerchantId(),
-                e.getAvailable(), e.getReserved(), e.getVersion(),
+                e.getAvailable(), e.getReserved(), e.getStockVersion(),
                 e.getCreatedAt(), e.getUpdatedAt(), reservations);
     }
 

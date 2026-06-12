@@ -69,6 +69,7 @@ public class PaymentOa extends AbstractMementoJpaOa<Payment, Payment.Memento, Pa
         for (Payment.HoldMemento hm : m.holds()) {
             EscrowHoldEntity he = new EscrowHoldEntity();
             he.setId(hm._id()); // child surrogate key — keeps the merge an in-place UPDATE
+            he.setVersion(hm._version()); // and the child's optimistic-lock version, or the merge reads as stale
             he.setHoldId(hm.holdId());
             he.setOrderId(hm.orderId());
             he.setMerchantId(hm.merchantId());
@@ -86,7 +87,8 @@ public class PaymentOa extends AbstractMementoJpaOa<Payment, Payment.Memento, Pa
         List<Payment.HoldMemento> holds = new ArrayList<>();
         for (EscrowHoldEntity he : e.getHolds()) {
             holds.add(new Payment.HoldMemento(he.getHoldId(), he.getOrderId(), he.getMerchantId(),
-                    he.getAmount(), he.getCurrency(), he.getStatus(), he.getReleasedAt(), he.getId()));
+                    he.getAmount(), he.getCurrency(), he.getStatus(), he.getReleasedAt(), he.getId(),
+                    he.getVersion()));
         }
         return new Payment.Memento(e.getId(), e.getPaymentId(), e.getOrderRef(), e.getAmount(),
                 e.getCurrency(), e.getStatus(), e.getGatewayTxnId(), e.getPaymentUrl(),

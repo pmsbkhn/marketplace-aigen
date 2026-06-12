@@ -65,26 +65,32 @@ public class ProductOa extends AbstractMementoJpaOa<Product, Product.Memento, Pr
     }
 
     /**
-     * A fresh aggregate carries no child surrogate keys; align them with the existing rows by
-     * natural key (variantId / skuCode) so the merge updates in place instead of insert + orphan
-     * delete — Hibernate flushes inserts first, which would trip the unique {@code sku_code} index.
+     * A fresh aggregate carries no child surrogate keys; align them (id AND optimistic-lock
+     * version) with the existing rows by natural key (variantId / skuCode) so the merge updates in
+     * place instead of insert + orphan delete — Hibernate flushes inserts first, which would trip
+     * the unique {@code sku_code} index; and a detached child with an id but a stale/null version
+     * trips the optimistic lock.
      */
     private void threadChildIds(Product aggregate, ProductEntity existing) {
-        Map<String, Long> variantIds = new HashMap<>();
-        Map<String, Long> skuIds = new HashMap<>();
+        Map<String, VariantEntity> variantsByKey = new HashMap<>();
+        Map<String, SkuEntity> skusByKey = new HashMap<>();
         for (VariantEntity ve : existing.getVariants()) {
-            variantIds.put(ve.getVariantId(), ve.getId());
+            variantsByKey.put(ve.getVariantId(), ve);
             for (SkuEntity se : ve.getSkus()) {
-                skuIds.put(se.getSkuCode(), se.getId());
+                skusByKey.put(se.getSkuCode(), se);
             }
         }
         for (Variant v : aggregate.variants()) {
-            if (v._id() == null) {
-                v.set_id(variantIds.get(v.id().value()));
+            VariantEntity ve = variantsByKey.get(v.id().value());
+            if (v._id() == null && ve != null) {
+                v.set_id(ve.getId());
+                v.set_version(ve.getVersion());
             }
             for (Sku s : v.skus()) {
-                if (s._id() == null) {
-                    s.set_id(skuIds.get(s.code().value()));
+                SkuEntity se = skusByKey.get(s.code().value());
+                if (s._id() == null && se != null) {
+                    s.set_id(se.getId());
+                    s.set_version(se.getVersion());
                 }
             }
         }
@@ -140,12 +146,14 @@ public class ProductOa extends AbstractMementoJpaOa<Product, Product.Memento, Pr
         for (Product.VariantMemento vm : m.variants()) {
             VariantEntity ve = new VariantEntity();
             ve.setId(vm._id());
+            ve.setVersion(vm._version()); // child optimistic-lock version, or the merge reads as stale
             ve.setVariantId(vm.variantId());
             ve.setName(vm.name());
             ve.getAttributes().putAll(vm.attributes());
             for (Product.SkuMemento sm : vm.skus()) {
                 SkuEntity se = new SkuEntity();
                 se.setId(sm._id());
+                se.setVersion(sm._version());
                 se.setSkuId(sm.skuId());
                 se.setSkuCode(sm.skuCode());
                 se.setPriceAmount(sm.priceAmount());
@@ -169,11 +177,11 @@ public class ProductOa extends AbstractMementoJpaOa<Product, Product.Memento, Pr
         for (VariantEntity ve : e.getVariants()) {
             List<Product.SkuMemento> skus = new ArrayList<>();
             for (SkuEntity se : ve.getSkus()) {
-                skus.add(new Product.SkuMemento(se.getId(), se.getSkuId(), se.getSkuCode(),
-                        se.getPriceAmount(), se.getCurrency()));
+                skus.add(new Product.SkuMemento(se.getId(), se.getVersion(), se.getSkuId(),
+                        se.getSkuCode(), se.getPriceAmount(), se.getCurrency()));
             }
-            variants.add(new Product.VariantMemento(ve.getId(), ve.getVariantId(), ve.getName(),
-                    new HashMap<>(ve.getAttributes()), skus));
+            variants.add(new Product.VariantMemento(ve.getId(), ve.getVersion(), ve.getVariantId(),
+                    ve.getName(), new HashMap<>(ve.getAttributes()), skus));
         }
         List<Product.ImageMemento> images = new ArrayList<>();
         for (ProductImageEntity ie : e.getImages()) {

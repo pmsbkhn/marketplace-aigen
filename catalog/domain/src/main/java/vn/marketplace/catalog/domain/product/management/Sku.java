@@ -19,6 +19,8 @@ public class Sku implements Entity {
 
     /** Surrogate key threaded by the persistence adapter — {@code null} until first persisted. */
     private Long _id;
+    /** Optimistic-lock version threaded by the persistence adapter, like {@code _id}. */
+    private Long _version;
     private final SkuId id;
     private final SkuCode code;
     private Money price;
@@ -37,6 +39,7 @@ public class Sku implements Entity {
         Sku sku = new Sku(new SkuId(m.skuId()), new SkuCode(m.skuCode()),
                 m.priceAmount(), Currency.of(m.currency()));
         sku.set_id(m._id());
+        sku.set_version(m._version());
         return sku;
     }
 
@@ -46,6 +49,14 @@ public class Sku implements Entity {
 
     public void set_id(Long _id) {
         this._id = _id;
+    }
+
+    public Long _version() {
+        return _version;
+    }
+
+    public void set_version(Long _version) {
+        this._version = _version;
     }
 
     void changePrice(long newAmount) {

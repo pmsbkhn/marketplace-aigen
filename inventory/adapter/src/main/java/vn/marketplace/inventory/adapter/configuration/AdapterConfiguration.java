@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import tech.vsf.ptnt.msfw.configuration.OutboxConfiguration;
+import tech.vsf.ptnt.msfw.consumption.spring.ConsumptionConfiguration;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.springcore.configuration.SpringCoreConfiguration;
 import vn.marketplace.inventory.application.stock.DeductStock;
@@ -26,12 +27,14 @@ import vn.marketplace.inventory.application.stock.UpdateMerchantStockUc;
 import vn.marketplace.inventory.domain.stock.management.Stock;
 
 /**
- * Production wiring: msfw core + Kafka-backed transactional outbox. Use-cases are declared as
+ * Production wiring: msfw core + Kafka-backed transactional outbox (producer side) +
+ * {@code ConsumptionConfiguration} (consumer side: @KafkaListener over routed topics, default
+ * JSON/Avro CloudEvent deserializers, inbox idempotency, retry/DLQ). Use-cases are declared as
  * {@code @Bean} (NOT {@code @Component}) so the msfw {@code EventPublishingProxyCreator} can wrap their
  * {@code @EventPublishHandler} methods (the outbox proxy path the Event-Publish fitness function requires).
  */
 @Configuration
-@Import({SpringCoreConfiguration.class, OutboxConfiguration.class})
+@Import({SpringCoreConfiguration.class, OutboxConfiguration.class, ConsumptionConfiguration.class})
 @ComponentScan(basePackages = {"vn.marketplace.inventory.adapter"})
 @EntityScan(basePackages = {"vn.marketplace.inventory.adapter.stock.outbound.persistence.entity"})
 @EnableJpaRepositories(basePackages = {"vn.marketplace.inventory.adapter.stock.outbound.persistence"})

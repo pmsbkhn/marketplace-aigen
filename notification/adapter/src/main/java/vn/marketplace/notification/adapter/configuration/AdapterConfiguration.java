@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import tech.vsf.ptnt.msfw.configuration.OutboxConfiguration;
+import tech.vsf.ptnt.msfw.consumption.spring.ConsumptionConfiguration;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.springcore.configuration.SpringCoreConfiguration;
 import vn.marketplace.notification.application.delivery.AcceptNotification;
@@ -28,7 +29,7 @@ import vn.marketplace.notification.domain.delivery.management.Notification;
  * {@code @Component}s picked up by the component scan.
  */
 @Configuration
-@Import({SpringCoreConfiguration.class, OutboxConfiguration.class})
+@Import({SpringCoreConfiguration.class, OutboxConfiguration.class, ConsumptionConfiguration.class})
 @ComponentScan(basePackages = {"vn.marketplace.notification.adapter"})
 @EntityScan(basePackages = {"vn.marketplace.notification.adapter.delivery.outbound.persistence.entity"})
 @EnableJpaRepositories(basePackages = {"vn.marketplace.notification.adapter.delivery.outbound.persistence"})

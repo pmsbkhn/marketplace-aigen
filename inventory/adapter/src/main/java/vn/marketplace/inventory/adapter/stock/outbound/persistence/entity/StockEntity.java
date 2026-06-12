@@ -37,8 +37,14 @@ public class StockEntity extends LongIdJpaEntity {
     @Column(name = "reserved", nullable = false)
     private int reserved;
 
+    /**
+     * The DOMAIN stock version (business invariant from the tech spec), distinct from the JPA
+     * {@code @Version} optimistic-lock field current msfw inherits via {@code LongIdJpaEntity} —
+     * renamed from {@code version} so Lombok's accessor no longer clashes with the base class's
+     * {@code getVersion()}.
+     */
     @Column(name = "stock_version", nullable = false)
-    private long version;
+    private long stockVersion;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

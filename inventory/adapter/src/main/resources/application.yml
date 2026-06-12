@@ -1,0 +1,21 @@
+# Local defaults — the config server (bootstrap.yml) overrides these per environment.
+spring:
+  kafka:
+    consumer:
+      group-id: inventory-worker   # tech spec: consumer group "inventory-worker"
+
+# Event routing: (source, type) -> topic + format. The @KafkaListener derives its subscription
+# from these entries; both consumed topics are listed (inventory publishes no events).
+app:
+  config:
+    event:
+      routing:
+        events:
+          - source: Catalog
+            type: ProductCreated
+            topic: catalog-events
+            format: JSON
+          - source: Order
+            type: OrderCompleted
+            topic: order-events
+            format: JSON

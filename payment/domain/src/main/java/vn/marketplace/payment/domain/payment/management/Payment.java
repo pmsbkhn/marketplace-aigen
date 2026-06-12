@@ -220,7 +220,7 @@ public class Payment extends Aggregate<PaymentId> implements Snapshotable<Paymen
         for (EscrowHold h : holds) {
             holdMementos.add(new HoldMemento(h.id().value(), h.orderId(), h.merchantId().value(),
                     h.amount().amount(), h.amount().currency().name(), h.status().name(), h.releasedAt(),
-                    h._id()));
+                    h._id(), h._version()));
         }
         return new Memento(_id(), id.value(), orderRef, amount.amount(), amount.currency().name(),
                 status.name(), gatewayTxnId, paymentUrl, failReason, createdAt, paidAt, updatedAt,
@@ -243,6 +243,7 @@ public class Payment extends Aggregate<PaymentId> implements Snapshotable<Paymen
     }
 
     public record HoldMemento(String holdId, String orderId, String merchantId, long amount,
-                              String currency, String status, LocalDateTime releasedAt, Long _id) {
+                              String currency, String status, LocalDateTime releasedAt, Long _id,
+                              Long _version) {
     }
 }

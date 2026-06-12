@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import tech.vsf.ptnt.msfw.configuration.OutboxConfiguration;
+import tech.vsf.ptnt.msfw.consumption.spring.ConsumptionConfiguration;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
 import tech.vsf.ptnt.springcore.configuration.SpringCoreConfiguration;
 import vn.marketplace.payment.application.payment.BankPort;
@@ -36,7 +37,7 @@ import vn.marketplace.payment.domain.payment.management.Settlement;
  * {@code @EventPublishHandler} methods.
  */
 @Configuration
-@Import({SpringCoreConfiguration.class, OutboxConfiguration.class})
+@Import({SpringCoreConfiguration.class, OutboxConfiguration.class, ConsumptionConfiguration.class})
 @ComponentScan(basePackages = {"vn.marketplace.payment.adapter"})
 @EntityScan(basePackages = {"vn.marketplace.payment.adapter.payment.outbound.persistence.entity"})
 @EnableJpaRepositories(basePackages = {"vn.marketplace.payment.adapter.payment.outbound.persistence"})

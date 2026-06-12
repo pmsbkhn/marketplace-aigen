@@ -23,7 +23,8 @@ Parent pom: Java 21, Spring Boot 4.0.6, Spring Cloud 2025.1.1, `msfw 1.0-SNAPSHO
 need parameter names).
 
 msfw deps by module: `domain` → `domain-core`; `application` → `domain-core` (+ `event-core`, `outbox`
-if publishing); `adapter` → `spring-outbox` or `spring-adapter-core` (+ `event-consumption` if consuming).
+if publishing); `adapter` → `spring-outbox` or `spring-adapter-core` (+ `spring-event-consumption` if
+consuming; `msfw-test` at test scope for the in-memory fakes).
 
 > ⚠ **Lombok ↔ build JDK**: if the adapter uses Lombok, the Lombok version must support the JDK you
 > *build* with (not just the Java 21 target). Old Lombok silently fails to generate constructors on
@@ -53,7 +54,7 @@ if publishing); `adapter` → `spring-outbox` or `spring-adapter-core` (+ `event
 | Repository port | `… extends Repository<T>` |
 | REST / boundary / DTO | `…Controller` / `…Facade` (`@Service`,`@Transactional`) / `…Request`,`…Response` |
 | Persistence | `…Oa` (extends `AbstractJpaOa`/`AbstractMementoJpaOa`), `…Entity` (`@Entity extends LongIdJpaEntity`), `…JpaRepository extends JpaOaRepository<E>` |
-| Consumer | `…PipelineFactory extends FiveStepsPipelineFactory<Cmd>` |
+| Consumer | `…PipelineFactory extends AbstractSpringFiveStepsPipelineFactory<Data>` + an `…EventsFacade` (void handler methods; `eventId` via `EventCausation.current()`); payload DTO = record + `@JsonIgnoreProperties(ignoreUnknown = true)`. Wiring: `@Import(ConsumptionConfiguration.class)` + routing entries in `application.yml` |
 
 Adapter package: `…adapter.<feature>.{inbound/{restful,messaging}, outbound/persistence}` +
 `…adapter.configuration`.
