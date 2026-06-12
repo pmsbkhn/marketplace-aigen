@@ -7,12 +7,14 @@ import org.junit.jupiter.api.Test;
 import tech.vsf.ptnt.msfw.consumption.DefaultErrorClassifier;
 import tech.vsf.ptnt.msfw.consumption.PostProcessor;
 import tech.vsf.ptnt.msfw.consumption.postprocess.DefaultPostProcessor;
+import tech.vsf.ptnt.msfw.consumption.spring.ConsumptionPipelines;
 import tech.vsf.ptnt.msfw.consumption.spring.SpringKafkaEventConsumer;
 import tech.vsf.ptnt.msfw.consumption.spring.deserializer.AvroCloudEventDeserializer;
 import tech.vsf.ptnt.msfw.consumption.spring.deserializer.JsonCloudEventDeserializer;
 import tech.vsf.ptnt.msfw.consumption.spring.metrics.ConsumptionMetrics;
 import tech.vsf.ptnt.msfw.consumption.spring.postprocess.JacksonDataToJsonConverter;
 import tech.vsf.ptnt.msfw.consumption.spring.postprocess.LoggingResultStore;
+import tech.vsf.ptnt.msfw.consumption.upcast.UpcasterChain;
 import tech.vsf.ptnt.msfw.publication.kafka.RoutingManager;
 import tech.vsf.ptnt.msfw.test.InMemoryIdempotencyGuard;
 import vn.marketplace.inventory.application.stock.DeductStockCmd;
@@ -50,10 +52,13 @@ class StockEventsConsumptionTest {
 
         StockEventsFacade facade = new StockEventsFacade(initialised::add, deducted::add);
 
-        new InitSkuPipelineFactory(consumer, postProcessor, new InMemoryIdempotencyGuard(),
-                routingManager, json, avro, objectMapper, facade);
-        new DeductStockPipelineFactory(consumer, postProcessor, new InMemoryIdempotencyGuard(),
-                routingManager, json, avro, objectMapper, facade);
+        ConsumptionPipelines pipelines = new ConsumptionPipelines(consumer, postProcessor,
+                new InMemoryIdempotencyGuard(), routingManager, json, avro, objectMapper,
+                new UpcasterChain(java.util.List.of()));
+        pipelines.subscribe("Catalog", "ProductCreated", ProductCreatedData.class)
+                .handle(facade, "onProductCreated");
+        pipelines.subscribe("Order", "OrderCompleted", OrderCompletedData.class)
+                .handle(facade, "onOrderCompleted");
     }
 
     @Test
