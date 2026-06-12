@@ -9,7 +9,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import tech.vsf.ptnt.msfw.configuration.OutboxConfiguration;
 import tech.vsf.ptnt.msfw.consumption.spring.ConsumptionConfiguration;
+import tech.vsf.ptnt.msfw.consumption.spring.EventSubscriber;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
+import vn.marketplace.notification.adapter.delivery.inbound.messaging.NotificationEventsFacade;
+import vn.marketplace.notification.adapter.delivery.inbound.messaging.PaymentReceivedData;
 import tech.vsf.ptnt.springcore.configuration.SpringCoreConfiguration;
 import vn.marketplace.notification.application.delivery.AcceptNotification;
 import vn.marketplace.notification.application.delivery.AcceptNotificationUc;
@@ -50,5 +53,12 @@ public class AdapterConfiguration {
     @Bean
     public GetNotification getNotification(Repository<Notification> repository) {
         return new GetNotificationUc(repository);
+    }
+
+    /** Event subscriptions — msfw's registrar builds and registers a pipeline per entry. */
+    @Bean
+    public EventSubscriber notificationEventSubscriptions(NotificationEventsFacade facade) {
+        return pipelines -> pipelines.subscribe("Payment", "PaymentReceived", PaymentReceivedData.class)
+                .handle(facade, "onPaymentReceived");
     }
 }

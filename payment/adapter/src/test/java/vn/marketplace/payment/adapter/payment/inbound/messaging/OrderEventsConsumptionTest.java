@@ -7,14 +7,17 @@ import org.junit.jupiter.api.Test;
 import tech.vsf.ptnt.msfw.consumption.DefaultErrorClassifier;
 import tech.vsf.ptnt.msfw.consumption.PostProcessor;
 import tech.vsf.ptnt.msfw.consumption.postprocess.DefaultPostProcessor;
+import tech.vsf.ptnt.msfw.consumption.spring.ConsumptionPipelines;
 import tech.vsf.ptnt.msfw.consumption.spring.SpringKafkaEventConsumer;
 import tech.vsf.ptnt.msfw.consumption.spring.deserializer.AvroCloudEventDeserializer;
 import tech.vsf.ptnt.msfw.consumption.spring.deserializer.JsonCloudEventDeserializer;
 import tech.vsf.ptnt.msfw.consumption.spring.metrics.ConsumptionMetrics;
 import tech.vsf.ptnt.msfw.consumption.spring.postprocess.JacksonDataToJsonConverter;
 import tech.vsf.ptnt.msfw.consumption.spring.postprocess.LoggingResultStore;
+import tech.vsf.ptnt.msfw.consumption.upcast.UpcasterChain;
 import tech.vsf.ptnt.msfw.publication.kafka.RoutingManager;
 import tech.vsf.ptnt.msfw.test.InMemoryIdempotencyGuard;
+import vn.marketplace.payment.adapter.payment.dto.OrderCompletedEvent;
 import vn.marketplace.payment.adapter.payment.facade.PaymentFacade;
 import vn.marketplace.payment.adapter.payment.outbound.gateway.MerchantBankDirectory;
 import vn.marketplace.payment.application.payment.ProcessPayoutCmd;
@@ -58,9 +61,11 @@ class OrderEventsConsumptionTest {
                 cmd -> { throw new UnsupportedOperationException(); },
                 new MerchantBankDirectory());
 
-        new OrderCompletedPipelineFactory(consumer, postProcessor, new InMemoryIdempotencyGuard(),
-                routingManager, new JsonCloudEventDeserializer(objectMapper),
-                new AvroCloudEventDeserializer(null), objectMapper, new OrderEventsFacade(paymentFacade));
+        ConsumptionPipelines pipelines = new ConsumptionPipelines(consumer, postProcessor,
+                new InMemoryIdempotencyGuard(), routingManager, new JsonCloudEventDeserializer(objectMapper),
+                new AvroCloudEventDeserializer(null), objectMapper, new UpcasterChain(java.util.List.of()));
+        pipelines.subscribe("Order", "OrderCompleted", OrderCompletedEvent.class)
+                .handle(new OrderEventsFacade(paymentFacade), "onOrderCompleted");
     }
 
     @Test

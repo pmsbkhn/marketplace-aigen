@@ -10,7 +10,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import tech.vsf.ptnt.msfw.configuration.OutboxConfiguration;
 import tech.vsf.ptnt.msfw.consumption.spring.ConsumptionConfiguration;
+import tech.vsf.ptnt.msfw.consumption.spring.EventSubscriber;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
+import vn.marketplace.payment.adapter.payment.dto.OrderCompletedEvent;
+import vn.marketplace.payment.adapter.payment.inbound.messaging.OrderEventsFacade;
 import tech.vsf.ptnt.springcore.configuration.SpringCoreConfiguration;
 import vn.marketplace.payment.application.payment.BankPort;
 import vn.marketplace.payment.application.payment.GetPayment;
@@ -77,5 +80,12 @@ public class AdapterConfiguration {
     @Bean
     public GetPayment getPayment(Repository<Payment> paymentRepository) {
         return new GetPaymentUc(paymentRepository);
+    }
+
+    /** Event subscriptions — msfw's registrar builds and registers a pipeline per entry. */
+    @Bean
+    public EventSubscriber orderEventSubscriptions(OrderEventsFacade facade) {
+        return pipelines -> pipelines.subscribe("Order", "OrderCompleted", OrderCompletedEvent.class)
+                .handle(facade, "onOrderCompleted");
     }
 }

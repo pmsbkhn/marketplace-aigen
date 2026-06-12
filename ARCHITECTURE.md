@@ -54,7 +54,7 @@ consuming; `msfw-test` at test scope for the in-memory fakes).
 | Repository port | `… extends Repository<T>` |
 | REST / boundary / DTO | `…Controller` / `…Facade` (`@Service`,`@Transactional`) / `…Request`,`…Response` |
 | Persistence | `…Oa` (extends `AbstractJpaOa`/`AbstractMementoJpaOa`), `…Entity` (`@Entity extends LongIdJpaEntity`), `…JpaRepository extends JpaOaRepository<E>` |
-| Consumer | `…PipelineFactory extends AbstractSpringFiveStepsPipelineFactory<Data>` + an `…EventsFacade` (void handler methods; `eventId` via `EventCausation.current()`); payload DTO = record + `@JsonIgnoreProperties(ignoreUnknown = true)`. Wiring: `@Import(ConsumptionConfiguration.class)` + routing entries in `application.yml` |
+| Consumer | one `EventSubscriber` bean per feature: `pipelines.subscribe(ctx, name, Data.class)[.prepare(converter)].handle(facade, "method"[, Input.class])` — dispatching to an `…EventsFacade` (void handler methods; `eventId` via `EventCausation.current()`); payload DTO = record + `@JsonIgnoreProperties(ignoreUnknown = true)`. Wiring: `@Import(ConsumptionConfiguration.class)` + routing entries in `application.yml` |
 
 Adapter package: `…adapter.<feature>.{inbound/{restful,messaging}, outbound/persistence}` +
 `…adapter.configuration`.

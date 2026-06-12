@@ -9,7 +9,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import tech.vsf.ptnt.msfw.configuration.OutboxConfiguration;
 import tech.vsf.ptnt.msfw.consumption.spring.ConsumptionConfiguration;
+import tech.vsf.ptnt.msfw.consumption.spring.EventSubscriber;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
+import vn.marketplace.order.adapter.order.inbound.messaging.PaymentEventsFacade;
+import vn.marketplace.order.adapter.order.inbound.messaging.PaymentFailedData;
+import vn.marketplace.order.adapter.order.inbound.messaging.PaymentReceivedData;
 import tech.vsf.ptnt.springcore.configuration.SpringCoreConfiguration;
 import vn.marketplace.order.application.order.CancelOrder;
 import vn.marketplace.order.application.order.CancelOrderUc;
@@ -52,5 +56,16 @@ public class AdapterConfiguration {
     @Bean
     public GetOrder getOrder(Repository<Order> orderRepository) {
         return new GetOrderUc(orderRepository);
+    }
+
+    /** Event subscriptions — msfw's registrar builds and registers a pipeline per entry. */
+    @Bean
+    public EventSubscriber paymentEventSubscriptions(PaymentEventsFacade facade) {
+        return pipelines -> {
+            pipelines.subscribe("Payment", "PaymentReceived", PaymentReceivedData.class)
+                    .handle(facade, "onPaymentReceived");
+            pipelines.subscribe("Payment", "PaymentFailed", PaymentFailedData.class)
+                    .handle(facade, "onPaymentFailed");
+        };
     }
 }

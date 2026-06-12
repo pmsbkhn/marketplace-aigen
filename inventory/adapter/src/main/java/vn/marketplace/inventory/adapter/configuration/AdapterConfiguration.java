@@ -9,7 +9,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import tech.vsf.ptnt.msfw.configuration.OutboxConfiguration;
 import tech.vsf.ptnt.msfw.consumption.spring.ConsumptionConfiguration;
+import tech.vsf.ptnt.msfw.consumption.spring.EventSubscriber;
 import tech.vsf.ptnt.msfw.domain.core.Repository;
+import vn.marketplace.inventory.adapter.stock.inbound.messaging.OrderCompletedData;
+import vn.marketplace.inventory.adapter.stock.inbound.messaging.ProductCreatedData;
+import vn.marketplace.inventory.adapter.stock.inbound.messaging.StockEventsFacade;
 import tech.vsf.ptnt.springcore.configuration.SpringCoreConfiguration;
 import vn.marketplace.inventory.application.stock.DeductStock;
 import vn.marketplace.inventory.application.stock.DeductStockUc;
@@ -68,5 +72,16 @@ public class AdapterConfiguration {
     @Bean
     public UpdateMerchantStock updateMerchantStock(Repository<Stock> stockRepository) {
         return new UpdateMerchantStockUc(stockRepository);
+    }
+
+    /** Event subscriptions — msfw's registrar builds and registers a pipeline per entry. */
+    @Bean
+    public EventSubscriber stockEventSubscriptions(StockEventsFacade facade) {
+        return pipelines -> {
+            pipelines.subscribe("Catalog", "ProductCreated", ProductCreatedData.class)
+                    .handle(facade, "onProductCreated");
+            pipelines.subscribe("Order", "OrderCompleted", OrderCompletedData.class)
+                    .handle(facade, "onOrderCompleted");
+        };
     }
 }
