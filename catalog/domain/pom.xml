@@ -23,5 +23,12 @@
             <artifactId>domain-core</artifactId>
             <version>${msfw.version}</version>
         </dependency>
+        <!-- JsonEventContract: producer-side contract fixtures (see <repo>/contracts). -->
+        <dependency>
+            <groupId>tech.vsf.ptnt.msfw</groupId>
+            <artifactId>msfw-test</artifactId>
+            <version>${msfw.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
