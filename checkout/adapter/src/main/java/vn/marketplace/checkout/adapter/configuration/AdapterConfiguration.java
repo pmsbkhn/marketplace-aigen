@@ -1,11 +1,15 @@
 package vn.marketplace.checkout.adapter.configuration;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+import tech.vsf.ptnt.msfw.domain.workflow.WorkflowObserver;
 import tech.vsf.ptnt.springcore.exception.GlobalExceptionHandler;
+import tech.vsf.ptnt.springcore.workflow.MicrometerWorkflowObserver;
 import vn.marketplace.checkout.application.checkout.CatalogPort;
 import vn.marketplace.checkout.application.checkout.CheckoutSessionPort;
 import vn.marketplace.checkout.application.checkout.GetCheckoutSession;
@@ -36,8 +40,15 @@ public class AdapterConfiguration {
                                          OrderPort order, PaymentPort payment,
                                          CheckoutSessionPort sessions,
                                          @Value("${checkout.max-items-per-cart:50}") int maxItems,
-                                         @Value("${checkout.max-merchants-per-cart:10}") int maxMerchants) {
-        return new SubmitCheckoutUc(catalog, inventory, order, payment, sessions, maxItems, maxMerchants);
+                                         @Value("${checkout.max-merchants-per-cart:10}") int maxMerchants,
+                                         ObjectProvider<MeterRegistry> meterRegistry) {
+        // msfw.workflow.runs{workflow=checkout,outcome,step} — alert on outcome=compensation_failed.
+        MeterRegistry registry = meterRegistry.getIfAvailable();
+        WorkflowObserver observer = registry != null
+                ? new MicrometerWorkflowObserver(registry)
+                : WorkflowObserver.NOOP;
+        return new SubmitCheckoutUc(catalog, inventory, order, payment, sessions, maxItems,
+                maxMerchants, observer);
     }
 
     @Bean
