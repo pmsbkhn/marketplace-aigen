@@ -1,0 +1,30 @@
+# Local defaults — the config server (bootstrap.yml) overrides these per environment.
+spring:
+  kafka:
+    consumer:
+      group-id: payment-worker
+
+# Event routing: (source, type) -> topic + format, used by BOTH sides — the outbox sender routes
+# published events (PaymentReceived/PaymentFailed/PayoutCompleted) and the @KafkaListener derives
+# its subscription. Records on payment-events (own publishes) have no pipeline and are skipped.
+app:
+  config:
+    event:
+      routing:
+        events:
+          - source: Order
+            type: OrderCompleted
+            topic: order-events
+            format: JSON
+          - source: Payment
+            type: PaymentReceived
+            topic: payment-events
+            format: JSON
+          - source: Payment
+            type: PaymentFailed
+            topic: payment-events
+            format: JSON
+          - source: Payment
+            type: PayoutCompleted
+            topic: payment-events
+            format: JSON

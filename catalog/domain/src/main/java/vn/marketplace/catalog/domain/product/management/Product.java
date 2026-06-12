@@ -258,10 +258,11 @@ public class Product extends Aggregate<ProductId> implements Snapshotable<Produc
         for (Variant v : variants) {
             List<SkuMemento> skuMementos = new ArrayList<>();
             for (Sku s : v.skus()) {
-                skuMementos.add(new SkuMemento(s._id(), s.id().value(), s.code().value(),
+                skuMementos.add(new SkuMemento(s._id(), s._version(), s.id().value(), s.code().value(),
                         s.price().amount(), s.price().currency().name()));
             }
-            variantMementos.add(new VariantMemento(v._id(), v.id().value(), v.name(), v.attributes(), skuMementos));
+            variantMementos.add(new VariantMemento(v._id(), v._version(), v.id().value(), v.name(),
+                    v.attributes(), skuMementos));
         }
         List<ImageMemento> imageMementos = images.stream()
                 .map(im -> new ImageMemento(im.url(), im.sortOrder()))
@@ -293,13 +294,15 @@ public class Product extends Aggregate<ProductId> implements Snapshotable<Produc
     }
 
     public record VariantMemento(Long _id,
+                                 Long _version,
                                  String variantId,
                                  String name,
                                  Map<String, String> attributes,
                                  List<SkuMemento> skus) {
     }
 
-    public record SkuMemento(Long _id, String skuId, String skuCode, long priceAmount, String currency) {
+    public record SkuMemento(Long _id, Long _version, String skuId, String skuCode,
+                             long priceAmount, String currency) {
     }
 
     public record ImageMemento(String url, int sortOrder) {

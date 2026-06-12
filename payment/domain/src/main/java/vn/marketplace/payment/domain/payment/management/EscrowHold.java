@@ -29,6 +29,13 @@ public class EscrowHold implements Entity {
     /** Surrogate key threaded by the persistence adapter (null until first save). */
     private Long _id;
 
+    /**
+     * Optimistic-lock version threaded by the persistence adapter, like {@code _id} — current msfw
+     * versions every JPA row ({@code LongIdJpaEntity}), and a detached child rebuilt with an id but
+     * a null version reads as stale on merge.
+     */
+    private Long _version;
+
     EscrowHold(EscrowHoldId id, String orderId, MerchantId merchantId, Money amount) {
         if (amount.amount() <= 0) {
             throw new PaymentDomainException(PaymentErrorCode.INVALID_AMOUNT);
@@ -55,6 +62,7 @@ public class EscrowHold implements Entity {
                 new MerchantId(m.merchantId()), Money.of(m.amount(), Currency.of(m.currency())),
                 EscrowStatus.valueOf(m.status()), m.releasedAt());
         hold.set_id(m._id());
+        hold.set_version(m._version());
         return hold;
     }
 
@@ -98,5 +106,13 @@ public class EscrowHold implements Entity {
 
     public Long _id() {
         return _id;
+    }
+
+    public void set_version(Long _version) {
+        this._version = _version;
+    }
+
+    public Long _version() {
+        return _version;
     }
 }

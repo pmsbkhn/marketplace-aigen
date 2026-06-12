@@ -1,0 +1,19 @@
+# Local defaults — the config server (bootstrap.yml) overrides these per environment.
+spring:
+  kafka:
+    consumer:
+      group-id: notification-worker
+
+# Event routing: (source, type) -> topic the @KafkaListener subscribes to. Today only
+# PaymentReceived is consumed (merchant notifications); the tech spec's remaining events
+# (OrderCompleted, OrderCancelled, ProductApproved/Rejected, PayoutCompleted) are follow-ups —
+# each is one more routing entry + pipeline factory.
+app:
+  config:
+    event:
+      routing:
+        events:
+          - source: Payment
+            type: PaymentReceived
+            topic: payment-events
+            format: JSON
