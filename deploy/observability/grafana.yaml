@@ -495,6 +495,66 @@ data:
         }
       ]
     }
+  ea-slo.json: |
+    {
+      "title": "SLO / runtime fitness",
+      "uid": "ea-slo",
+      "tags": ["ea", "slo", "runtime"],
+      "schemaVersion": 39,
+      "editable": true,
+      "time": { "from": "now-3h", "to": "now" },
+      "refresh": "30s",
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "HTTP latency max by service — SLO < 1s (warn 0.5)",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "s",
+            "custom": { "thresholdsStyle": { "mode": "line" } },
+            "thresholds": { "mode": "absolute", "steps": [
+              { "color": "green", "value": null }, { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 1.0 } ] } } },
+          "targets": [ { "expr": "max by (application)(http_server_requests_seconds_max)",
+            "legendFormat": "{{application}}", "refId": "A" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Outbox pending by service — SLO < 500 (warn 100)",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "fieldConfig": { "defaults": {
+            "custom": { "thresholdsStyle": { "mode": "line" } },
+            "thresholds": { "mode": "absolute", "steps": [
+              { "color": "green", "value": null }, { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 500 } ] } } },
+          "targets": [ { "expr": "sum by (application)(msfw_outbox_pending_events)",
+            "legendFormat": "{{application}}", "refId": "A" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Outbox parked (poison) — SLO = 0",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } } },
+          "targets": [ { "expr": "sum(msfw_outbox_parked_events)", "refId": "A" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Latency drift — now vs 1h ago (warn if now > 1.5× baseline)",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+          "fieldConfig": { "defaults": { "unit": "s" } },
+          "targets": [
+            { "expr": "max by (application)(http_server_requests_seconds_max)",
+              "legendFormat": "{{application}} now", "refId": "A" },
+            { "expr": "max by (application)(http_server_requests_seconds_max offset 1h)",
+              "legendFormat": "{{application}} 1h ago", "refId": "B" }
+          ]
+        }
+      ]
+    }
 ---
 apiVersion: apps/v1
 kind: Deployment
