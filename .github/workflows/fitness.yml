@@ -1,11 +1,13 @@
-name: Architecture fitness
+name: Build, test & fitness
 
-# Runs the per-service ArchUnit fitness functions (ea-archrules harness), collects one
-# FitnessResult verdict per evaluation as NDJSON (the EA scorecard contract), uploads it as an
-# artifact, and fails the build only on an *enforced* violation.
+# Full per-service CI: compiles and runs the entire test suite (mvn test) for each service, AND
+# collects the architecture fitness verdicts (FitnessResult NDJSON, the EA scorecard contract) that
+# the same run emits via -Dea.fitness.sink=stdout. Fails if ANY service's build/tests fail or if any
+# enforced architecture violation is present. Uploads the verdict stream as an artifact.
 #
 # Prerequisite: a repo secret GH_PACKAGES_PAT (a PAT with scope read:packages) so CI can resolve
 # msfw + ea-archrules from GitHub Packages — GITHUB_TOKEN cannot read cross-repo packages.
+# Note: the full suite includes Testcontainers-based tests; the ubuntu-latest runner provides Docker.
 
 on:
   push:
@@ -14,7 +16,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  fitness:
+  build-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -26,22 +28,28 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Run architecture fitness functions
+      - name: Build, test & collect fitness verdicts
         env:
           GH_PACKAGES_USER: ${{ github.repository_owner }}
           GH_PACKAGES_PAT: ${{ secrets.GH_PACKAGES_PAT }}
         run: |
           : > fitness-results.ndjson
+          failed=""
           for svc in catalog order payment inventory notification checkout; do
             echo "::group::$svc"
-            ( cd "$svc" && mvn -B -ntp -s ../.github/ci-settings.xml test \
-                -Dtest=FitnessFunctionsTest -Dsurefire.failIfNoSpecifiedTests=false \
-                -Dea.fitness.sink=stdout ) | tee "/tmp/$svc.log" || true
+            if ( cd "$svc" && mvn -B -ntp -s ../.github/ci-settings.xml test \
+                   -Dea.fitness.sink=stdout ) | tee "/tmp/$svc.log"; then
+              echo "$svc: build + tests OK"
+            else
+              echo "::warning::$svc build/tests failed"
+              failed="$failed $svc"
+            fi
             grep 'EA_FITNESS_RESULT' "/tmp/$svc.log" | sed 's/^.*EA_FITNESS_RESULT //' \
               >> fitness-results.ndjson || true
             echo "::endgroup::"
           done
           echo "Collected $(wc -l < fitness-results.ndjson) verdict(s)"
+          echo "FAILED_SERVICES=$failed" >> "$GITHUB_ENV"
 
       - name: Summarise conformance
         if: always()
@@ -66,15 +74,19 @@ jobs:
 
       - name: Upload verdict stream
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: fitness-results
           path: fitness-results.ndjson
 
-      - name: Gate on enforced violations
+      - name: Gate on test failures & enforced violations
         run: |
+          if [ -n "$(echo "$FAILED_SERVICES" | tr -d ' ')" ]; then
+            echo "::error::build/tests failed for:$FAILED_SERVICES"
+            exit 1
+          fi
           if grep -q '"verdict":"fail"' fitness-results.ndjson; then
             echo "::error::enforced architecture violation(s) — see the conformance summary"
             exit 1
           fi
-          echo "No enforced violations."
+          echo "All services built, tested, and conformant."
