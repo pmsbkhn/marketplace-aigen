@@ -44,4 +44,16 @@ class FitnessFunctionsTest {
     void state_writers_publish_via_outbox() {
         EA.evaluate("stateWritersPublish", MsfwFitness.stateWritersPublish("vn.marketplace.payment.application"), CLASSES);
     }
+
+    @Test
+    void quantum_sync_boundary() {
+        EA.evaluate("quantumSyncBoundary",
+                MsfwFitness.quantumSyncBoundary("vn.marketplace.payment", EA.allowedSyncQuanta()), CLASSES);
+    }
+
+    /** The escrow event store stays inside the Payment quantum (no synchronous cross-quantum persistence). */
+    @Test
+    void event_store_in_quantum() {
+        EA.evaluate("eventStoreInQuantum", MsfwFitness.eventStoreInQuantum("vn.marketplace.payment"), CLASSES);
+    }
 }
