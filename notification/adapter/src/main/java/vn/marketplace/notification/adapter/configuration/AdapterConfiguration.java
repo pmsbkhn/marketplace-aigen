@@ -1,8 +1,11 @@
 package vn.marketplace.notification.adapter.configuration;
 
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -33,17 +36,20 @@ import vn.marketplace.notification.domain.delivery.management.Notification;
  */
 @Configuration
 @Import({SpringCoreConfiguration.class, OutboxConfiguration.class, ConsumptionConfiguration.class})
-@ComponentScan(basePackages = {"vn.marketplace.notification.adapter"})
+@ComponentScan(basePackages = {"vn.marketplace.notification.adapter"},
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = SpringBootApplication.class))
 @EntityScan(basePackages = {"vn.marketplace.notification.adapter.delivery.outbound.persistence.entity"})
 @EnableJpaRepositories(basePackages = {"vn.marketplace.notification.adapter.delivery.outbound.persistence"})
 public class AdapterConfiguration {
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public AcceptNotification acceptNotification(Repository<Notification> repository, EncryptionPort encryptionPort) {
         return new AcceptNotificationUc(repository, encryptionPort);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public DispatchNotification dispatchNotification(Repository<Notification> repository,
                                                      PreferencePort preferencePort,
                                                      NotificationProviderPort providerPort) {
@@ -51,6 +57,7 @@ public class AdapterConfiguration {
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public GetNotification getNotification(Repository<Notification> repository) {
         return new GetNotificationUc(repository);
     }

@@ -2,8 +2,11 @@ package vn.marketplace.payment.adapter.configuration;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -41,29 +44,34 @@ import vn.marketplace.payment.domain.payment.management.Settlement;
  */
 @Configuration
 @Import({SpringCoreConfiguration.class, OutboxConfiguration.class, ConsumptionConfiguration.class})
-@ComponentScan(basePackages = {"vn.marketplace.payment.adapter"})
+@ComponentScan(basePackages = {"vn.marketplace.payment.adapter"},
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = SpringBootApplication.class))
 @EntityScan(basePackages = {"vn.marketplace.payment.adapter.payment.outbound.persistence.entity"})
 @EnableJpaRepositories(basePackages = {"vn.marketplace.payment.adapter.payment.outbound.persistence"})
 public class AdapterConfiguration {
 
     /** Commission rate in basis points — standard merchant tier 2%; tiered rates via config. */
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public CommissionPolicy commissionPolicy(
             @Value("${payment.commission.rate-basis-points:200}") int rateBasisPoints) {
         return new CommissionPolicy(rateBasisPoints);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public InitEscrow initEscrow(Repository<Payment> paymentRepository, PaymentGatewayPort gateway) {
         return new InitEscrowUc(paymentRepository, gateway);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public HandleWebhook handleWebhook(Repository<Payment> paymentRepository) {
         return new HandleWebhookUc(paymentRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public ProcessSettlement processSettlement(PaymentRepository paymentRepository,
                                                Repository<Settlement> settlementRepository,
                                                SettlementDocWriter settlementDocWriter,
@@ -73,11 +81,13 @@ public class AdapterConfiguration {
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public ProcessPayout processPayout(Repository<Settlement> settlementRepository, BankPort bank) {
         return new ProcessPayoutUc(settlementRepository, bank);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public GetPayment getPayment(Repository<Payment> paymentRepository) {
         return new GetPaymentUc(paymentRepository);
     }
