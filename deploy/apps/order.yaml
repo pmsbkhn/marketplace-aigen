@@ -27,6 +27,12 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: marketplace-kafka-bootstrap.infra:9092
+            # JSON routing only — no Schema Registry deployed; the client is lazy and never
+            # contacted for JSON events, but the placeholder must resolve at wiring time.
+            - name: SPRING_KAFKA_SCHEMA_REGISTRY_URL
+              value: http://schema-registry.infra:8081
             - name: DB_HOST
               value: postgres.infra
             - name: DB_NAME

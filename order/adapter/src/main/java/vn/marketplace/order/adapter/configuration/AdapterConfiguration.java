@@ -1,10 +1,13 @@
 package vn.marketplace.order.adapter.configuration;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
@@ -38,12 +41,14 @@ import vn.marketplace.order.domain.orderlifecycle.management.Order;
  */
 @Configuration
 @Import({SpringCoreConfiguration.class, OutboxConfiguration.class, ConsumptionConfiguration.class})
-@ComponentScan(basePackages = {"vn.marketplace.order.adapter"})
+@ComponentScan(basePackages = {"vn.marketplace.order.adapter"},
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = SpringBootApplication.class))
 @EntityScan(basePackages = {"vn.marketplace.order.adapter.order.outbound.persistence.entity"})
 @EnableJpaRepositories(basePackages = {"vn.marketplace.order.adapter.order.outbound.persistence"})
 public class AdapterConfiguration {
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public CreatePendingOrder createPendingOrder(Repository<Order> orderRepository,
                                                  @Value("${order.pending-expiry-min:30}") int pendingExpiryMinutes) {
         return new CreatePendingOrderUc(orderRepository, pendingExpiryMinutes);
@@ -51,16 +56,19 @@ public class AdapterConfiguration {
 
     /** FR13 auto-cancel: handler of the {@code OrderPendingTimedOut} delayed timer. */
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public ExpirePendingOrder expirePendingOrder(Repository<Order> orderRepository) {
         return new ExpirePendingOrderUc(orderRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public TransitionOrder transitionOrder(Repository<Order> orderRepository) {
         return new TransitionOrderUc(orderRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public CancelOrder cancelOrder(Repository<Order> orderRepository) {
         return new CancelOrderUc(orderRepository);
     }

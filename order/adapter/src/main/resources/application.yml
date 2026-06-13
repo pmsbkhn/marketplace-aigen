@@ -29,3 +29,8 @@ app:
             type: OrderCancelled
             topic: order-events
             format: JSON
+          # FR13 self-addressed delayed timer — published AND consumed by this service (direction both).
+          - source: Order
+            type: OrderPendingTimedOut
+            topic: order-timeouts
+            format: JSON
