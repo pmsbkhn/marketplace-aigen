@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven settings for CI only. The service poms declare no <repositories>; locally everything
+  resolves from ~/.m2 (msfw + ea-archrules installed by hand). CI has no such cache, so this profile
+  points Maven at the two GitHub Packages repos the build needs and supplies one credential for both.
+
+  GITHUB_TOKEN cannot read packages owned by a *different* repo, so the workflow authenticates with a
+  PAT (scope read:packages) exposed as GH_PACKAGES_PAT — a single owner-scoped token reads both
+  pmsbkhn/msfw and pmsbkhn/ea-governance.
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+  <servers>
+    <server>
+      <id>github-msfw</id>
+      <username>${env.GH_PACKAGES_USER}</username>
+      <password>${env.GH_PACKAGES_PAT}</password>
+    </server>
+    <server>
+      <id>github-ea</id>
+      <username>${env.GH_PACKAGES_USER}</username>
+      <password>${env.GH_PACKAGES_PAT}</password>
+    </server>
+  </servers>
+  <profiles>
+    <profile>
+      <id>gh-packages</id>
+      <repositories>
+        <repository>
+          <id>github-msfw</id>
+          <url>https://maven.pkg.github.com/pmsbkhn/msfw</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+        <repository>
+          <id>github-ea</id>
+          <url>https://maven.pkg.github.com/pmsbkhn/ea-governance</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>gh-packages</activeProfile>
+  </activeProfiles>
+</settings>
