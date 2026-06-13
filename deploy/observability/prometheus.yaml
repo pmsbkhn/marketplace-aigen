@@ -1,0 +1,225 @@
+# Prometheus — scrapes the meshed marketplace services via pod annotations
+# (prometheus.io/scrape|port|path, set in deploy/apps/*.yaml) and evaluates the msfw alert
+# rules (copied from msfw ops/observability/prometheus/msfw-alerts.yml — keep in sync when
+# bumping msfw). Local-sized: 2d retention, emptyDir storage.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: infra
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+  - apiGroups: [""]
+    resources: [pods, services, endpoints]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: infra
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: infra
+  labels: { app: prometheus }
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    rule_files:
+      - /etc/prometheus/rules/msfw-alerts.yml
+    scrape_configs:
+      - job_name: marketplace-services
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: { names: [marketplace] }
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: infra
+  labels: { app: prometheus }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: prometheus }
+  template:
+    metadata:
+      labels: { app: prometheus }
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.53.0
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.retention.time=2d
+          ports:
+            - containerPort: 9090
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: "1",  memory: 1Gi }
+          readinessProbe:
+            httpGet: { path: /-/ready, port: 9090 }
+            periodSeconds: 5
+          volumeMounts:
+            - { name: config, mountPath: /etc/prometheus }
+            - { name: rules,  mountPath: /etc/prometheus/rules }
+            - { name: data,   mountPath: /prometheus }
+      volumes:
+        - name: config
+          configMap: { name: prometheus-config }
+        - name: rules
+          configMap: { name: prometheus-rules }
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: infra
+  labels: { app: prometheus }
+spec:
+  selector: { app: prometheus }
+  ports:
+    - port: 9090
+      targetPort: 9090
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: infra
+  labels: { app: prometheus }
+data:
+  msfw-alerts.yml: |
+    # Prometheus alert rules for the msfw metric set (see ../METRICS.md for the contract).
+    # Thresholds marked TUNE are starting points — adjust per service traffic.
+    groups:
+      - name: msfw-outbox
+        rules:
+          - alert: MsfwOutboxParkedEvents
+            expr: msfw_outbox_parked_events > 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Outbox has parked (poison) events on {{ $labels.application }}"
+              description: >-
+                {{ $value }} event(s) exhausted their send attempts and are parked. Inspect and
+                redrive via GET/POST /actuator/outbox once the cause (routing entry, schema) is fixed.
+
+          - alert: MsfwOutboxPublicationLag
+            expr: msfw_outbox_pending_events > 1000   # TUNE
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Outbox publication lag on {{ $labels.application }}"
+              description: "{{ $value }} stored events are waiting to be forwarded — poller behind or down."
+
+          - alert: MsfwOutboxPollerStuck
+            expr: increase(msfw_locking_task_runs_total{task="outbox-publication", outcome="executed"}[10m]) == 0
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Outbox poller has not run for 10m on {{ $labels.application }}"
+              description: >-
+                No instance executed outbox-publication in 10 minutes — check the scheduler, the
+                shedlock/Redis lock backend, and instance health. Events are accumulating unpublished.
+
+      - name: msfw-consumption
+        rules:
+          - alert: MsfwConsumptionDeadLettering
+            expr: sum by (application, topic) (rate(msfw_consumption_duration_seconds_count{outcome="failed_non_retryable"}[5m])) > 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Records dead-lettering on {{ $labels.application }}/{{ $labels.topic }}"
+              description: "Poison records are going to the DLQ. Inspect, fix, replay via /actuator/dlqreplay."
+
+          - alert: MsfwConsumptionNoPipeline
+            expr: sum by (application, topic) (rate(msfw_consumption_duration_seconds_count{outcome="no_pipeline"}[5m])) > 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Records skipped with no pipeline on {{ $labels.application }}/{{ $labels.topic }}"
+              description: "A consumed topic has records no pipeline handles — routing/subscription gap."
+
+          - alert: MsfwConsumerLag
+            expr: kafka_consumer_fetch_manager_records_lag_max > 10000   # TUNE
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Kafka consumer lag on {{ $labels.application }}"
+              description: "Max partition lag {{ $value }} for 10m — consumer slow, stuck, or rebalancing."
+
+      - name: msfw-tasks
+        rules:
+          - alert: MsfwLockedTaskFailing
+            expr: increase(msfw_locking_task_runs_total{outcome="failed"}[15m]) > 0
+            for: 0m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Locked task {{ $labels.task }} failing on {{ $labels.application }}"
+              description: "The task threw during execution — see service logs (logged at ERROR with the task name)."
+
+      - name: msfw-processes
+        rules:
+          - alert: MsfwSagaExpiry
+            expr: increase(msfw_saga_expired_total[15m]) > 0
+            for: 0m
+            labels:
+              severity: info
+            annotations:
+              summary: "Saga deadlines firing: {{ $labels.saga }} on {{ $labels.application }}"
+              description: "onDeadline() compensations are running — a counterpart service is not answering in time."
+
+          - alert: MsfwWorkflowCompensationFailed
+            expr: increase(msfw_workflow_runs_total{outcome="compensation_failed"}[5m]) > 0
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Workflow {{ $labels.workflow }} compensation FAILED on {{ $labels.application }}"
+              description: >-
+                Step {{ $labels.step }} failed AND a compensation failed too — the system is in an
+                indeterminate state. Manual cleanup needed; details ride the service's error logs as
+                suppressed exceptions on the original failure.

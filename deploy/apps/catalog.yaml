@@ -17,6 +17,9 @@ spec:
         # Wait for the Istio sidecar before starting the app, so the JDBC connection to
         # postgres.infra succeeds on the first try (avoids the proxy-not-ready startup race).
         proxy.istio.io/config: '{"holdApplicationUntilProxyStarts": true}'
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: /actuator/prometheus
     spec:
       containers:
         - name: catalog
