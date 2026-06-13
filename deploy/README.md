@@ -48,11 +48,24 @@ make up           # verify Docker Desktop is up, then create the k3d cluster + l
 make istio        # install Istio + ingress gateway, label infra/marketplace ns for injection
 make argocd       # install ArgoCD
 make infra        # Strimzi operator + Postgres + Kafka + Redis + Elasticsearch
+make observability # Prometheus + Grafana, pre-provisioned with the msfw dashboard + alert rules
 make status       # show everything
 ```
 
 Tear down: `make down` (delete cluster) · `make nuke` (cluster + k3d registry/volumes). Docker Desktop
 itself is never touched.
+
+## Observability
+
+`make observability` deploys Prometheus + Grafana into the `infra` namespace:
+
+- Prometheus discovers the marketplace pods via the `prometheus.io/*` annotations on
+  `apps/*.yaml` and scrapes `/actuator/prometheus` (the services expose it on the `k8s`
+  profile, with `management.metrics.tags.application` feeding the dashboard's Service selector).
+- The **msfw alert rules** and the **MSFW Overview dashboard** are copies of
+  `msfw/ops/observability/` — when bumping msfw, re-sync them in the same PR (that directory is
+  the metric-name contract).
+- Grafana runs with anonymous admin (local only): `kubectl -n infra port-forward svc/grafana 3000:3000`.
 
 ## What's NOT here yet (later phases)
 

@@ -9,7 +9,7 @@ K           := kubectl
 
 .DEFAULT_GOAL := help
 
-.PHONY: help prereqs docker-check up istio argocd strimzi infra status down nuke namespaces
+.PHONY: help prereqs docker-check up istio argocd strimzi infra observability status down nuke namespaces
 
 help: ## Show targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -57,6 +57,14 @@ infra: namespaces strimzi ## Deploy Postgres + Kafka + Redis + Elasticsearch
 	$(K) -n $(INFRA_NS) wait --for=condition=ready pod -l app=postgres --timeout=300s
 	$(K) -n $(INFRA_NS) wait kafka/marketplace --for=condition=Ready --timeout=600s || true
 	@echo "infra deployed in namespace '$(INFRA_NS)'"
+
+observability: namespaces ## Deploy Prometheus + Grafana (msfw dashboard + alert rules)
+	$(K) apply -f observability/prometheus.yaml
+	$(K) apply -f observability/grafana.yaml
+	$(K) -n $(INFRA_NS) rollout status deploy/prometheus --timeout=180s
+	$(K) -n $(INFRA_NS) rollout status deploy/grafana --timeout=180s
+	@echo "Grafana:    kubectl -n $(INFRA_NS) port-forward svc/grafana 3000:3000   (anonymous admin, dashboard: msfw/MSFW Overview)"
+	@echo "Prometheus: kubectl -n $(INFRA_NS) port-forward svc/prometheus 9090:9090"
 
 status: ## Show cluster + platform status
 	@echo "== nodes =="     && $(K) get nodes
