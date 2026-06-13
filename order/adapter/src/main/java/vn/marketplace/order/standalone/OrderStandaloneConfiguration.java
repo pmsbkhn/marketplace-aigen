@@ -1,5 +1,6 @@
 package vn.marketplace.order.standalone;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,8 @@ import vn.marketplace.order.application.order.CancelOrder;
 import vn.marketplace.order.application.order.CancelOrderUc;
 import vn.marketplace.order.application.order.CreatePendingOrder;
 import vn.marketplace.order.application.order.CreatePendingOrderUc;
+import vn.marketplace.order.application.order.ExpirePendingOrder;
+import vn.marketplace.order.application.order.ExpirePendingOrderUc;
 import vn.marketplace.order.application.order.GetOrder;
 import vn.marketplace.order.application.order.GetOrderUc;
 import vn.marketplace.order.application.order.TransitionOrder;
@@ -32,8 +35,16 @@ public class OrderStandaloneConfiguration {
 
     @Bean
     @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
-    public CreatePendingOrder createPendingOrder(Repository<Order> orderRepository) {
-        return new CreatePendingOrderUc(orderRepository);
+    public CreatePendingOrder createPendingOrder(Repository<Order> orderRepository,
+                                                 @Value("${order.pending-expiry-min:30}") int pendingExpiryMinutes) {
+        return new CreatePendingOrderUc(orderRepository, pendingExpiryMinutes);
+    }
+
+    /** FR13 auto-cancel: handler of the {@code OrderPendingTimedOut} delayed timer. */
+    @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
+    public ExpirePendingOrder expirePendingOrder(Repository<Order> orderRepository) {
+        return new ExpirePendingOrderUc(orderRepository);
     }
 
     @Bean
