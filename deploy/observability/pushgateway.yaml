@@ -1,0 +1,58 @@
+# Prometheus Pushgateway — landing zone for the EA conformance verdict stream.
+#
+# Fitness functions run at build/CI time (not in a long-lived pod), so they can't be scraped
+# directly; the scorecard collector PUTs gauges here (scorecard.py --pushgateway ...) and Prometheus
+# scrapes the Pushgateway. Deployed in the `marketplace` namespace with the prometheus.io/scrape
+# annotations so the EXISTING `marketplace-services` scrape job picks it up — no Prometheus config
+# change, no restart, no loss of the emptyDir TSDB. (A production setup would instead add a dedicated
+# scrape job with honor_labels: true; here the pushed system/pnl/verdict labels survive relabeling
+# and that is enough.)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pushgateway
+  namespace: marketplace
+  labels: { app: pushgateway }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: pushgateway }
+  template:
+    metadata:
+      labels: { app: pushgateway }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: /metrics
+    spec:
+      containers:
+        - name: pushgateway
+          image: prom/pushgateway:v1.9.0
+          args:
+            - --persistence.file=/data/pushgateway.store
+            - --persistence.interval=5m
+          ports:
+            - containerPort: 9091
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+            limits:   { cpu: 200m, memory: 128Mi }
+          readinessProbe:
+            httpGet: { path: /-/ready, port: 9091 }
+            periodSeconds: 5
+          volumeMounts:
+            - { name: data, mountPath: /data }
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pushgateway
+  namespace: marketplace
+  labels: { app: pushgateway }
+spec:
+  selector: { app: pushgateway }
+  ports:
+    - port: 9091
+      targetPort: 9091
