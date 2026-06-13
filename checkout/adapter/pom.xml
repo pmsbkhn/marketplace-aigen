@@ -83,6 +83,12 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>tech.vsf.ea</groupId>
+			<artifactId>ea-archrules</artifactId>
+			<version>0.2.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<!-- only for the (vacuous-but-armed) @EventPublishHandler fitness rule -->
 			<groupId>tech.vsf.ptnt.msfw</groupId>
 			<artifactId>event-core</artifactId>
