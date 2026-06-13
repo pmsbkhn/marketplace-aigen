@@ -44,4 +44,15 @@ class FitnessFunctionsTest {
     void state_writers_publish_via_outbox() {
         EA.evaluate("stateWritersPublish", MsfwFitness.stateWritersPublish("vn.marketplace.checkout.application"), CLASSES);
     }
+
+    /**
+     * Architectural-quantum boundary: every synchronous outbound client (..outbound.client.*ClientOa)
+     * must target a quantum the architect declared in the registry (allowedSyncQuanta). A new sync
+     * client to an undeclared quantum fails — the quantum cannot widen silently.
+     */
+    @Test
+    void quantum_sync_boundary() {
+        EA.evaluate("quantumSyncBoundary",
+                MsfwFitness.quantumSyncBoundary("vn.marketplace.checkout", EA.allowedSyncQuanta()), CLASSES);
+    }
 }
