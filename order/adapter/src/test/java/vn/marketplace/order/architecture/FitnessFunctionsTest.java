@@ -1,96 +1,35 @@
 package vn.marketplace.order.architecture;
 
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.domain.JavaMethod;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
-import com.tngtech.archunit.lang.ArchCondition;
-import com.tngtech.archunit.lang.ConditionEvents;
-import com.tngtech.archunit.lang.SimpleConditionEvent;
+import com.tngtech.archunit.junit.AnalyzeClasses;
+import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchRule;
 
-import tech.vsf.ptnt.msfw.domain.core.Aggregate;
-import tech.vsf.ptnt.msfw.domain.core.Entity;
-import tech.vsf.ptnt.msfw.event.handling.EventPublishHandler;
+import tech.vsf.ea.archrules.MsfwFitness;
 
 /**
- * Architectural fitness functions (fitness-funcs.txt) — automated, deployment-gating checks.
+ * Architectural fitness functions — automated, deployment-gating checks. The rule bodies live in
+ * the independent {@code ea-archrules} library ({@link MsfwFitness}); this class only binds them
+ * to the order service's package root. One source of truth across every service replaces the
+ * per-service copies.
  */
+@AnalyzeClasses(packages = "vn.marketplace.order", importOptions = ImportOption.DoNotIncludeTests.class)
 class FitnessFunctionsTest {
 
-    private static JavaClasses orderClasses;
+    @ArchTest
+    static final ArchRule domain_is_pure = MsfwFitness.domainIsPure("vn.marketplace.order");
 
-    @BeforeAll
-    static void importClasses() {
-        orderClasses = new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages("vn.marketplace.order");
-    }
+    @ArchTest
+    static final ArchRule use_case_slices_do_not_cross_depend =
+            MsfwFitness.useCaseSlices("vn.marketplace.order.application.(*)..");
 
-    @Test
-    void dependencyInversion_domainDependsOnNothingOutward() {
-        noClasses()
-                .that().resideInAPackage("vn.marketplace.order.domain..")
-                .should().dependOnClassesThat().resideInAnyPackage(
-                        "vn.marketplace.order.application..",
-                        "vn.marketplace.order.adapter..",
-                        "org.springframework..",
-                        "jakarta..",
-                        "tech.vsf.ptnt.springcore..",
-                        "tech.vsf.ptnt.msfw.infrastructure..")
-                .because("the domain must not depend on application, adapter, or any framework/Spring code")
-                .check(orderClasses);
-    }
+    @ArchTest
+    static final ArchRule aggregates_encapsulated = MsfwFitness.aggregatesEncapsulated();
 
-    @Test
-    void encapsulation_aggregatesHaveNoPublicSetters() {
-        noMethods()
-                .that().areDeclaredInClassesThat().areAssignableTo(Aggregate.class)
-                .should().bePublic().andShould().haveNameMatching("set[A-Z].*")
-                .because("aggregate state must change only through verb-based methods, never public setters")
-                .check(orderClasses);
-    }
+    @ArchTest
+    static final ArchRule entities_encapsulated = MsfwFitness.entitiesEncapsulated();
 
-    @Test
-    void encapsulation_entitiesHaveNoPublicSetters() {
-        noMethods()
-                .that().areDeclaredInClassesThat().areAssignableTo(Entity.class)
-                .should().bePublic().andShould().haveNameMatching("set[A-Z].*")
-                .because("entity state must change only through verb-based methods, never public setters")
-                .check(orderClasses);
-    }
-
-    @Test
-    void eventPublish_stateWritingUseCasesAreAnnotated() {
-        ArchCondition<JavaMethod> beAnnotatedWhenWritingState =
-                new ArchCondition<>("be annotated with @EventPublishHandler when they persist a state change") {
-                    @Override
-                    public void check(JavaMethod method, ConditionEvents events) {
-                        boolean writesState = method.getMethodCallsFromSelf().stream().anyMatch(call -> {
-                            String owner = call.getTargetOwner().getFullName();
-                            String name = call.getName();
-                            return owner.equals("tech.vsf.ptnt.msfw.domain.core.Repository")
-                                    && (name.equals("save") || name.equals("delete"));
-                        });
-                        if (writesState && !method.isAnnotatedWith(EventPublishHandler.class)) {
-                            events.add(SimpleConditionEvent.violated(method,
-                                    method.getFullName()
-                                            + " writes state via Repository but is not annotated with @EventPublishHandler"));
-                        }
-                    }
-                };
-
-        methods()
-                .that().areDeclaredInClassesThat().resideInAPackage("vn.marketplace.order.application..")
-                .and().areDeclaredInClassesThat().haveSimpleNameEndingWith("Uc")
-                .should(beAnnotatedWhenWritingState)
-                .because("use cases that change persistent state must publish via the @EventPublishHandler outbox path")
-                .check(orderClasses);
-    }
+    @ArchTest
+    static final ArchRule state_writers_publish_via_outbox =
+            MsfwFitness.stateWritersPublish("vn.marketplace.order.application");
 }

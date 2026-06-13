@@ -108,6 +108,13 @@
 			<version>${archunit.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- EA fitness-function rule library (independent, zero compile-dep on msfw). -->
+		<dependency>
+			<groupId>tech.vsf.ea</groupId>
+			<artifactId>ea-archrules</artifactId>
+			<version>0.1.0</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
