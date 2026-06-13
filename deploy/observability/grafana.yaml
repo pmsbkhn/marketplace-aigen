@@ -552,6 +552,40 @@ data:
             { "expr": "max by (application)(http_server_requests_seconds_max offset 1h)",
               "legendFormat": "{{application}} 1h ago", "refId": "B" }
           ]
+        },
+        {
+          "type": "stat",
+          "title": "Workflow compensation failures (1h) — SLO = 0",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 6, "w": 8, "x": 0, "y": 24 },
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } } },
+          "targets": [ { "expr": "sum(increase(msfw_workflow_runs_total{outcome=\"compensation_failed\"}[1h]))",
+            "refId": "A" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Workflow runs/s by outcome (alert: compensation_failed)",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 6, "w": 16, "x": 8, "y": 24 },
+          "targets": [ { "expr": "sum by (workflow, outcome)(rate(msfw_workflow_runs_total[5m]))",
+            "legendFormat": "{{workflow}} · {{outcome}}", "refId": "A" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Saga events/s by outcome",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 30 },
+          "targets": [ { "expr": "sum by (saga, outcome)(rate(msfw_saga_events_total[5m]))",
+            "legendFormat": "{{saga}} · {{outcome}}", "refId": "A" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Saga deadlines fired/s (onDeadline)",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 30 },
+          "targets": [ { "expr": "sum by (saga)(rate(msfw_saga_expired_total[5m]))",
+            "legendFormat": "{{saga}}", "refId": "A" } ]
         }
       ]
     }
