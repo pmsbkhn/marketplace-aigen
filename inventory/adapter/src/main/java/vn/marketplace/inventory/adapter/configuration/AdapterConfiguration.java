@@ -1,8 +1,11 @@
 package vn.marketplace.inventory.adapter.configuration;
 
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -39,37 +42,44 @@ import vn.marketplace.inventory.domain.stock.management.Stock;
  */
 @Configuration
 @Import({SpringCoreConfiguration.class, OutboxConfiguration.class, ConsumptionConfiguration.class})
-@ComponentScan(basePackages = {"vn.marketplace.inventory.adapter"})
+@ComponentScan(basePackages = {"vn.marketplace.inventory.adapter"},
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = SpringBootApplication.class))
 @EntityScan(basePackages = {"vn.marketplace.inventory.adapter.stock.outbound.persistence.entity"})
 @EnableJpaRepositories(basePackages = {"vn.marketplace.inventory.adapter.stock.outbound.persistence"})
 public class AdapterConfiguration {
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public ReserveStock reserveStock(Repository<Stock> stockRepository) {
         return new ReserveStockUc(stockRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public ReleaseStock releaseStock(StockRepository stockRepository) {
         return new ReleaseStockUc(stockRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public DeductStock deductStock(Repository<Stock> stockRepository) {
         return new DeductStockUc(stockRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public InitSku initSku(Repository<Stock> stockRepository) {
         return new InitSkuUc(stockRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public GetStockLevel getStockLevel(Repository<Stock> stockRepository) {
         return new GetStockLevelUc(stockRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public UpdateMerchantStock updateMerchantStock(Repository<Stock> stockRepository) {
         return new UpdateMerchantStockUc(stockRepository);
     }

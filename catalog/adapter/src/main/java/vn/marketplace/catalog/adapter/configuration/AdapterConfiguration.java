@@ -1,8 +1,11 @@
 package vn.marketplace.catalog.adapter.configuration;
 
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -32,37 +35,44 @@ import vn.marketplace.catalog.domain.product.management.Product;
  */
 @Configuration
 @Import({SpringCoreConfiguration.class, OutboxConfiguration.class})
-@ComponentScan(basePackages = {"vn.marketplace.catalog.adapter"})
+@ComponentScan(basePackages = {"vn.marketplace.catalog.adapter"},
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = SpringBootApplication.class))
 @EntityScan(basePackages = {"vn.marketplace.catalog.adapter.product.management.outbound.persistence.entity"})
 @EnableJpaRepositories(basePackages = {"vn.marketplace.catalog.adapter.product.management.outbound.persistence"})
 public class AdapterConfiguration {
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public CreateProduct createProduct(Repository<Product> productRepository) {
         return new CreateProductUc(productRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public ModerateProduct moderateProduct(Repository<Product> productRepository) {
         return new ModerateProductUc(productRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public GetPrice getPrice(ProductRepository productRepository) {
         return new GetPriceUc(productRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public GetProduct getProduct(Repository<Product> productRepository) {
         return new GetProductUc(productRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public SearchProducts searchProducts(ProductRepository productRepository) {
         return new SearchProductsUc(productRepository);
     }
 
     @Bean
+    @DependsOn({"eventProcessorManager", "jsonEventStoreProcessor"})
     public UpdateSkuPrice updateSkuPrice(Repository<Product> productRepository) {
         return new UpdateSkuPriceUc(productRepository);
     }
