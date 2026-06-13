@@ -9,7 +9,7 @@ K           := kubectl
 
 .DEFAULT_GOAL := help
 
-.PHONY: help prereqs docker-check up istio argocd strimzi infra observability status down nuke namespaces
+.PHONY: help prereqs docker-check up istio argocd strimzi infra observability policy status down nuke namespaces
 
 help: ## Show targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -57,6 +57,9 @@ infra: namespaces strimzi ## Deploy Postgres + Kafka + Redis + Elasticsearch
 	$(K) -n $(INFRA_NS) wait --for=condition=ready pod -l app=postgres --timeout=300s
 	$(K) -n $(INFRA_NS) wait kafka/marketplace --for=condition=Ready --timeout=600s || true
 	@echo "infra deployed in namespace '$(INFRA_NS)'"
+
+policy: ## EA runtime fitness functions — OPA/conftest over the app manifests (deny=hard, warn=advisory)
+	conftest test apps/*.yaml -p policy
 
 observability: namespaces ## Deploy Prometheus + Grafana (msfw dashboard + alert rules)
 	$(K) apply -f observability/prometheus.yaml
