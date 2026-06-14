@@ -36,5 +36,11 @@
             <artifactId>outbox</artifactId>
             <version>${msfw.version}</version>
         </dependency>
+        <dependency>
+            <!-- CQRS read-model Projector SPI for the escrow query side -->
+            <groupId>tech.vsf.ptnt.msfw</groupId>
+            <artifactId>event-consumption</artifactId>
+            <version>${msfw.version}</version>
+        </dependency>
     </dependencies>
 </project>
