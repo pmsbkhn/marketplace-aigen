@@ -55,4 +55,10 @@ class FitnessFunctionsTest {
         EA.evaluate("quantumSyncBoundary",
                 MsfwFitness.quantumSyncBoundary("vn.marketplace.checkout", EA.allowedSyncQuanta()), CLASSES);
     }
+
+    /** Every concrete identity extends StringIdentity, not Identity directly (no hand-rolled boilerplate). */
+    @Test
+    void identities_use_string_base() {
+        EA.evaluate("msfwIdentityBase", MsfwFitness.identitiesUseStringBase("vn.marketplace.checkout"), CLASSES);
+    }
 }

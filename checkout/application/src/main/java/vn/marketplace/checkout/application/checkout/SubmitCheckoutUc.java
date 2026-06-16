@@ -21,7 +21,7 @@ import vn.marketplace.checkout.application.checkout.PaymentPort.EscrowAllocation
 import vn.marketplace.checkout.application.checkout.PaymentPort.EscrowDto;
 import vn.marketplace.checkout.application.checkout.SubmitCheckoutCmd.CheckoutItemInput;
 import vn.marketplace.checkout.domain.checkout.Currency;
-import vn.marketplace.checkout.domain.checkout.IdempotencyKey;
+import tech.vsf.ptnt.msfw.domain.core.IdempotencyKey;
 import vn.marketplace.checkout.domain.checkout.Money;
 import vn.marketplace.checkout.domain.checkout.management.CartSnapshot;
 import vn.marketplace.checkout.domain.checkout.management.CheckoutSaga;

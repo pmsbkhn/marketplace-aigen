@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import vn.marketplace.checkout.domain.checkout.IdempotencyKey;
+import tech.vsf.ptnt.msfw.domain.core.IdempotencyKey;
 import vn.marketplace.checkout.domain.checkout.SagaState;
 import vn.marketplace.checkout.domain.shared.InvalidTransitionException;
 
