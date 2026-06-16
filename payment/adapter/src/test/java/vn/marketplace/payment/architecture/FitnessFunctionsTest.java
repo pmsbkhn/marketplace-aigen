@@ -40,6 +40,12 @@ class FitnessFunctionsTest {
         EA.evaluate("entityEncapsulation", MsfwFitness.entitiesEncapsulated(), CLASSES);
     }
 
+    /** Every concrete identity extends StringIdentity, not Identity directly (no hand-rolled boilerplate). */
+    @Test
+    void identities_use_string_base() {
+        EA.evaluate("msfwIdentityBase", MsfwFitness.identitiesUseStringBase("vn.marketplace.payment"), CLASSES);
+    }
+
     @Test
     void state_writers_publish_via_outbox() {
         EA.evaluate("stateWritersPublish", MsfwFitness.stateWritersPublish("vn.marketplace.payment.application"), CLASSES);
