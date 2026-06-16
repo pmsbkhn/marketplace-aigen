@@ -44,4 +44,10 @@ class FitnessFunctionsTest {
     void state_writers_publish_via_outbox() {
         EA.evaluate("stateWritersPublish", MsfwFitness.stateWritersPublish("vn.marketplace.inventory.application"), CLASSES);
     }
+
+    /** Every concrete identity extends StringIdentity, not Identity directly (no hand-rolled boilerplate). */
+    @Test
+    void identities_use_string_base() {
+        EA.evaluate("msfwIdentityBase", MsfwFitness.identitiesUseStringBase("vn.marketplace.inventory"), CLASSES);
+    }
 }

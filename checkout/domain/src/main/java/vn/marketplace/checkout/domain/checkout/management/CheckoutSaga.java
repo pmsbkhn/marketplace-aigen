@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import tech.vsf.ptnt.msfw.domain.core.Aggregate;
-import vn.marketplace.checkout.domain.checkout.IdempotencyKey;
+import tech.vsf.ptnt.msfw.domain.core.IdempotencyKey;
 import vn.marketplace.checkout.domain.checkout.SagaState;
 import vn.marketplace.checkout.domain.shared.InvalidTransitionException;
 
