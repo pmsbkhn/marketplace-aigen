@@ -16,6 +16,7 @@ AaC ≠ chỉ sơ đồ. Một *architecture description* đầy đủ gồm nhi
 | Tạp phẩm | Vị trí | Vai trò |
 |---|---|---|
 | **Model + Views (C4)** | `docs/aac/` (thư mục này) | Cấu trúc tĩnh, động, triển khai |
+| **Vì sao AaC + EA** | [`why-aac-and-evolutionary.md`](why-aac-and-evolutionary.md) | Bài toán kiểm soát hệ thống: vấn đề ↔ giải pháp |
 | **ADR** | `docs/aac/adr/` | Quyết định & lý do ("tại sao") |
 | **Event contracts** | [`/contracts`](../../contracts) | Hợp đồng wire JSON cho event Kafka (msfw `JsonEventContract`) |
 | **Conventions** | [`/ARCHITECTURE.md`](../../ARCHITECTURE.md) | Quy ước msfw (layering, naming, cookbook) |
