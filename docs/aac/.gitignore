@@ -1,0 +1,5 @@
+# Structurizr Lite / CLI artifacts sinh ra khi render — không commit
+.structurizr/
+workspace.json
+*.png
+*.svg

@@ -1,0 +1,44 @@
+name: AaC (Structurizr) validate
+
+# Chống "trôi tài liệu": mỗi thay đổi trong docs/aac phải parse được và render được.
+# - `validate` bắt lỗi cú pháp DSL + identifier gãy + !include/!docs/!adrs hỏng.
+# - `export` ép Structurizr dựng từng view -> bắt lỗi view key/embed/quan hệ không tồn tại.
+# Chạy có giới hạn theo path để không tốn CI cho thay đổi không liên quan.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/aac/**'
+      - '.github/workflows/aac.yml'
+  pull_request:
+    paths:
+      - 'docs/aac/**'
+      - '.github/workflows/aac.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Dùng :latest cho chắc chắn pull được. Khuyến nghị: ghim sang tag ngày cụ thể
+      # (vd structurizr/cli:2024.11.03) sau khi xác nhận trên Docker Hub, để build tái lập.
+      - name: Validate Structurizr DSL workspace
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work structurizr/cli:latest \
+            validate -workspace docs/aac/workspace.dsl
+
+      - name: Export all views (Mermaid) — phát hiện lỗi view/embed
+        run: |
+          mkdir -p build/aac
+          docker run --rm -v "$PWD:/work" -w /work structurizr/cli:latest \
+            export -workspace docs/aac/workspace.dsl -format mermaid -output build/aac
+
+      - name: Upload exported diagrams
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: aac-diagrams
+          path: build/aac
