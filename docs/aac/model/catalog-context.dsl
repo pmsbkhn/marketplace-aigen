@@ -18,7 +18,7 @@ group "Catalog Context" {
 
         # --- B. APPLICATION (Use cases) ---
         createProductUc  = component "CreateProductUc" "Tạo sản phẩm (mặc định PENDING)" "Use case"
-        moderateProductUc= component "ModerateProductUc" "Admin duyệt/từ chối; publish ProductCreated đúng 1 lần khi ACTIVE lần đầu" "Use case"
+        moderateProductUc = component "ModerateProductUc" "Admin duyệt/từ chối; publish ProductCreated đúng 1 lần khi ACTIVE lần đầu" "Use case"
         getProductUc     = component "GetProductUc" "Đọc 1 sản phẩm" "Use case"
         searchProductsUc = component "SearchProductsUc" "Truy vấn sản phẩm ACTIVE" "Use case"
         getPriceUc       = component "GetPriceUc" "Giá snapshot từ DB (nguồn sự thật) phục vụ Checkout" "Use case"

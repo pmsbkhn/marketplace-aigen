@@ -17,12 +17,24 @@ deploymentEnvironment "Production (k3d)" {
             istioGw = infrastructureNode "Istio Ingress Gateway" "Edge entrypoint; service mesh (mTLS STRICT: Phase D)" "Istio"
 
             deploymentNode "marketplace namespace" "Istio sidecar injection" "Kubernetes Namespace" {
-                deploymentNode "catalog (Deployment)"      "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  { containerInstance catalogApi }
-                deploymentNode "checkout (Deployment)"     "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  { containerInstance checkoutApi }
-                deploymentNode "inventory (Deployment)"    "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  { containerInstance inventoryApi }
-                deploymentNode "order (Deployment)"        "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  { containerInstance orderApi }
-                deploymentNode "payment (Deployment)"      "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  { containerInstance paymentApi }
-                deploymentNode "notification (Deployment)" "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  { containerInstance notifApi }
+                deploymentNode "catalog (Deployment)"      "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  {
+                    containerInstance catalogApi
+                }
+                deploymentNode "checkout (Deployment)"     "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  {
+                    containerInstance checkoutApi
+                }
+                deploymentNode "inventory (Deployment)"    "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  {
+                    containerInstance inventoryApi
+                }
+                deploymentNode "order (Deployment)"        "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  {
+                    containerInstance orderApi
+                }
+                deploymentNode "payment (Deployment)"      "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  {
+                    containerInstance paymentApi
+                }
+                deploymentNode "notification (Deployment)" "OTel javaagent -> Tempo; profile k8s" "Pod (replicas=1)"  {
+                    containerInstance notifApi
+                }
             }
 
             deploymentNode "infra namespace" "" "Kubernetes Namespace" {

@@ -2,7 +2,7 @@
 
 Ghi chú ngắn: AaC và Evolutionary Architecture giải quyết việc **kiểm soát hệ thống** thế
 nào. Đây là phần "tại sao" ở tầng tổng; chi tiết cơ chế xem [training/](training/00-README.md)
-và [adr/](adr/README.md).
+và [adr/](adr/0000-about-these-adrs.md).
 
 ## Vấn đề (quan trọng giảm dần)
 
@@ -36,7 +36,7 @@ và [adr/](adr/README.md).
 - **Governance plane / EA scorecard verdict**
   ([ADR-0001](adr/0001-observability-governance-plane-split.md)). → Giải **#4**: biến tuân
   thủ thành **phán quyết đo được** (pass/warn/fail/waived), tách khỏi metric vận hành.
-- **ADR** (MADR, versioned — [adr/](adr/README.md)). → Giải **#5**: mỗi quyết định + lý do
+- **ADR** (MADR, versioned — [adr/](adr/0000-about-these-adrs.md)). → Giải **#5**: mỗi quyết định + lý do
   được lưu, đánh số, `Supersedes` khi đổi → dấu vết bất biến.
 - **Quy trình same-PR + CODEOWNERS + branch protection**
   ([training Ch.9](training/09-quy-trinh-va-governance.md)). → Khép vòng **#1–#3**: đổi code
