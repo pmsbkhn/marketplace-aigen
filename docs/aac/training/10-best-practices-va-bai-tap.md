@@ -57,8 +57,8 @@ vào `workspace.dsl`. Đây là viewpoint cho DBA.
 admin duyệt → `ProductCreated` qua Kafka → Inventory `InitSku`. Đối chiếu với
 `contracts/Catalog.ProductCreated.json`.
 
-**Bài 5 — ADR.** Viết `adr/0004-...md` cho một quyết định giả định: "đổi REST `/internal/*`
-sang gRPC ở Phase C". Nó có `Supersedes` ADR-0002 không? Ghi rõ Consequences.
+**Bài 5 — ADR.** Viết `adr/0006-...md` cho một quyết định giả định: "đổi REST `/internal/*`
+sang gRPC ở Phase C". Nó có `Supersedes` ADR-0004 không? Ghi rõ Consequences.
 
 **Bài 6 — Bắt lỗi CI.** Cố tình đổi tên `catalogApi` thành `catalogApiX` chỉ ở `workspace.dsl`
 (không đổi nơi định nghĩa). Chạy `validate`. Đọc thông báo lỗi — đây chính là "doc drift"

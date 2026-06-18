@@ -1,4 +1,4 @@
-# 2. REST `/internal/*` thay cho gRPC ở giai đoạn hiện tại
+# 4. REST `/internal/*` thay cho gRPC ở giai đoạn hiện tại
 
 - Status: Accepted
 - Date: 2026-06-18

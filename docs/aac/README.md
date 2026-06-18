@@ -107,10 +107,10 @@ Nhờ vậy mọi PR sửa kiến trúc đều được kiểm tra như code; t�
 
 Sơ đồ này là **as-built**. Khác biệt chính so với SAD đích, đã ghi trong description/ADR:
 
-- gRPC S2S → **REST `/internal/*`** (ADR-0002)
+- gRPC S2S → **REST `/internal/*`** (ADR-0004)
 - Redis (checkout session) & Elasticsearch (catalog search) → **đã provision ở infra,
   app chưa wire** (Phase C) — thấy rõ ở `ProdDeployment`
-- Worker/Cron tách riêng → **consumer in-process + sự kiện trễ** (ADR-0003)
+- Worker/Cron tách riêng → **consumer in-process + sự kiện trễ** (ADR-0005)
 - mTLS STRICT + authz (Istio) → **Phase D**
 - Chưa hiện thực ở app: SES/Twilio/FCM, template engine, SQS/DLQ (Notification dùng stand-in)
 

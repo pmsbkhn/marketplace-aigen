@@ -1,4 +1,4 @@
-# 1. EscrowLedger event-sourced + CQRS read model
+# 3. EscrowLedger event-sourced + CQRS read model
 
 - Status: Accepted
 - Date: 2026-06-18

@@ -12,7 +12,7 @@ Vài ví dụ áp dụng (đối chiếu SAD đích vs as-built):
 
 | SAD đích | As-built (đã sửa trong model) |
 |---|---|
-| gRPC S2S | REST `/internal/*` stand-in (ADR-0002) |
+| gRPC S2S | REST `/internal/*` stand-in (ADR-0004) |
 | Inventory/Notification viết bằng Go | Thực ra là **Java/Spring** |
 | Catalog dùng Elasticsearch | Search chạy trên **PostgreSQL**; ES mới provision, chưa wire |
 | Checkout dùng Redis | Session **in-memory**; Redis provision, chưa wire |

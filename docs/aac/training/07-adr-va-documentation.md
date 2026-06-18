@@ -12,10 +12,10 @@ của dự án — tránh tranh luận lặp lại "sao hồi đó làm thế n�
 Định dạng phổ biến: **MADR** (Markdown ADR): Context → Decision → Consequences. Đánh số
 tăng dần, **không sửa** ADR đã `Accepted` (muốn đổi thì viết ADR mới `Supersedes`).
 
-Ví dụ thật `docs/aac/adr/0002-rest-standins-for-sync-integration.md` (rút gọn):
+Ví dụ thật `docs/aac/adr/0004-rest-standins-for-sync-integration.md` (rút gọn):
 
 ```markdown
-# 2. REST `/internal/*` thay cho gRPC ở giai đoạn hiện tại
+# 4. REST `/internal/*` thay cho gRPC ở giai đoạn hiện tại
 - Status: Accepted
 - Date: 2026-06-18
 
@@ -31,13 +31,16 @@ mTLS do Istio mesh đảm nhiệm ở tầng hạ tầng.
 - (−) Chưa có hợp đồng schema cưỡng chế cho REST S2S.
 ```
 
-Dự án có 3 ADR neo đúng các quyết định as-built quan trọng:
+Register canonical của dự án có 5 ADR (số thống nhất với tham chiếu "ADR NNNN" trong lịch
+sử commit; 0001–0002 là quyết định nền back-fill từ history):
 
 | ADR | Quyết định |
 |---|---|
-| 0001 | EscrowLedger **event-sourced** + CQRS read model (chỉ nơi cần audit tài chính) |
-| 0002 | **REST `/internal/*`** thay gRPC ở giai đoạn này |
-| 0003 | **Consumer in-process** + sự kiện trễ, thay cho worker/cron tách riêng |
+| 0001 | Tách **runtime observability** khỏi **governance (fitness) plane** |
+| 0002 | Dùng **msfw StringIdentity** cho mọi Identity miền |
+| 0003 | EscrowLedger **event-sourced** + CQRS read model (chỉ nơi cần audit tài chính) |
+| 0004 | **REST `/internal/*`** thay gRPC ở giai đoạn này |
+| 0005 | **Consumer in-process** + sự kiện trễ, thay cho worker/cron tách riêng |
 
 > Mẹo: ADR nên link tới view liên quan ("xem `PaymentComponents`") để người đọc nhảy từ
 > "tại sao" sang "trông thế nào".

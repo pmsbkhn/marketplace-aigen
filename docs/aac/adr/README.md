@@ -7,11 +7,17 @@ review qua PR.
 Định dạng: [MADR](https://adr.github.io/madr/) rút gọn (Context → Decision → Consequences).
 Đánh số tăng dần, không sửa ADR đã `Accepted` — muốn đổi thì viết ADR mới `Supersedes`.
 
-| # | Tiêu đề | Trạng thái |
-|---|---|---|
-| [0001](0001-event-sourced-escrow-ledger.md) | EscrowLedger event-sourced + CQRS read model | Accepted |
-| [0002](0002-rest-standins-for-sync-integration.md) | REST `/internal/*` thay cho gRPC ở giai đoạn hiện tại | Accepted |
-| [0003](0003-in-process-consumers-over-separate-workers.md) | Kafka consumer in-process + sự kiện trễ thay cron/worker | Accepted |
+> **Đây là register canonical (duy nhất) của dự án.** Số ADR thống nhất với các tham chiếu
+> "ADR NNNN" trong lịch sử commit. ADR 0001 và 0002 được **back-fill** từ commit history
+> (#22, #31, #32) khi hợp nhất register vào repo — quyết định gốc có trước file.
 
-> Cách dùng với Structurizr: thư mục này có thể nhúng vào workspace bằng `!adrs adr`
-> trong khối `views`/`workspace` để render kèm sơ đồ (xem README chính của docs/aac).
+| # | Tiêu đề | Trạng thái | Nguồn |
+|---|---|---|---|
+| [0001](0001-observability-governance-plane-split.md) | Tách runtime observability khỏi governance (fitness) plane | Accepted | back-fill #22 |
+| [0002](0002-msfw-stringidentity.md) | Dùng msfw StringIdentity cho mọi Identity miền | Accepted | back-fill #31, #32 |
+| [0003](0003-event-sourced-escrow-ledger.md) | EscrowLedger event-sourced + CQRS read model | Accepted | — |
+| [0004](0004-rest-standins-for-sync-integration.md) | REST `/internal/*` thay cho gRPC ở giai đoạn hiện tại | Accepted | — |
+| [0005](0005-in-process-consumers-over-separate-workers.md) | Kafka consumer in-process + sự kiện trễ thay cron/worker | Accepted | — |
+
+> Cách dùng với Structurizr: thư mục này được nhúng vào workspace bằng `!adrs adr`
+> trong khối `marketplaceSystem` (Structurizr Lite hiển thị tab Decisions).

@@ -1,4 +1,4 @@
-# 3. Kafka consumer in-process + sự kiện trễ thay cho cron/worker tách riêng
+# 5. Kafka consumer in-process + sự kiện trễ thay cho cron/worker tách riêng
 
 - Status: Accepted
 - Date: 2026-06-18
