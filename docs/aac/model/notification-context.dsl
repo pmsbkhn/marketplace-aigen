@@ -13,7 +13,7 @@ group "Notification Context" {
 
         # --- A. INBOUND ---
         notifController           = component "NotificationController" "REST: POST /v1/notifications (202), GET /v1/notifications/{id}" "Spring MVC" "Ingress"
-        internalDispatchController= component "InternalDispatchController" "REST: POST /internal/notifications/{id}/dispatch (stand-in cho worker, S2S)" "Spring MVC" "InternalApi"
+        internalDispatchController = component "InternalDispatchController" "REST: POST /internal/notifications/{id}/dispatch (stand-in cho worker, S2S)" "Spring MVC" "InternalApi"
         notifEventsFacade         = component "NotificationEventsFacade" "Kafka consumer: PaymentReceived -> notification cho merchant" "msfw consumer"
 
         # --- B. APPLICATION ---
