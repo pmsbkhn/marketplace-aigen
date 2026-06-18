@@ -46,8 +46,13 @@ docs/aac/
 │   ├── operations.dsl         (Deployment)
 │   └── security.dsl           (Container + tag bảo mật)
 ├── documentation/       ← tài liệu văn xuôi nhúng (!docs) — embed sơ đồ + glossary
-└── adr/                 ← Architecture Decision Records (nhúng qua !adrs)
+├── adr/                 ← Architecture Decision Records (nhúng qua !adrs)
+└── training/            ← SÁCH dạy AaC qua chính dự án này (bắt đầu: training/00-README.md)
 ```
+
+> 📘 Mới học AaC? Đọc [`training/`](training/00-README.md) — cuốn cầm tay 10 chương (gồm
+> chương Quy trình & Governance giữ code↔docs không lệch), mỗi khái niệm có ví dụ trích
+> thẳng từ bộ tài liệu này.
 
 Cốt lõi AaC: **một model, nhiều view**. Hệ thống định nghĩa **một lần** trong `model/`;
 mỗi view chỉ là một **phép chiếu** → các view không thể mâu thuẫn nhau.
