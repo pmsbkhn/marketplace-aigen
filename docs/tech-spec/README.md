@@ -24,7 +24,7 @@ Quan hệ xuyên-BC chỉ khai ở Landscape/Context Map của AD, **không** l�
 | BC | Tech Spec | Trạng thái |
 | --- | --- | --- |
 | Checkout | [`TechSpec-Marketplace-Checkout.md`](TechSpec-Marketplace-Checkout.md) | ✅ pilot (căn theo v2.2) |
-| Payment | `TechSpec-Marketplace-Payment.md` | ⏳ |
+| Payment | [`TechSpec-Marketplace-Payment.md`](TechSpec-Marketplace-Payment.md) | ✅ mẫu (Tier 1: escrow/settlement/WORM) |
 | Catalog · Inventory · Order · Identity · Notification | `TechSpec-Marketplace-<BC>.md` | ⏳ theo cùng khuôn |
 
 ## Khuôn một Tech Spec (theo Checkout làm mẫu)
