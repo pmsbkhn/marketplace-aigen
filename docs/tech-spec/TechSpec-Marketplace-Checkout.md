@@ -1,17 +1,24 @@
 # Detailed Design — Checkout Service (Orchestrator)
 
-> **Status:** Draft v1.0 ·
+> **Status:** v1.1 — căn theo SDD-MKTPLACE-CORE-v2.2 ·
 > **Owner:** Checkout team ·
 > **Reviewers:** _TBD_
 >
-> **Liên kết:**
-> - SDD-MKTPLACE-CORE-v1.0 — mục 3.2.1, 4.1.1, 9.2
-> - OpenAPI spec
-> - IaC / Terraform
+> **Liên kết (lên AD / ngang hợp đồng):**
+> - **SDD-MKTPLACE-CORE-v2.2** — §2.2 (Checkout BC ở Landscape, **C4 L2**), §2.2.3 (luật tầng: AD dừng ở L2 · Tech Spec sở hữu L3), §2.4 (correspondence), §3.2.1, §4.1.1, §5.1.4 (hợp đồng tương tác), §9.2, §11 (ADR register hệ thống)
+> - OpenAPI spec + proto (hợp đồng đầy đủ — _nguồn sự thật_)
+> - IaC / Terraform (deployment chi tiết: replica/HPA/NetworkPolicy)
 
 > **Classification**: **Tier 2 — Business Critical** _(checkout gián đoạn = mất doanh thu nhưng không mất tiền đã giữ — escrow thuộc Payment Tier 1)_
 >
 > **Data class:** L2 (cart items, session metadata) + L3 (thông qua: giá snapshot, merchantId) · **System Owner:** Checkout team ⇒ **RTO < 4h · RPO < 1h** (§2). Tiêu chuẩn: System Tiering · Data Classification.
+
+> **Ranh giới tầng — Tech Spec này sở hữu gì vs AD giữ gì** (theo luật tầng SDD v2.2 §2.2.3):
+> - **AD (SDD) giữ — C4 L2 / Landscape:** hộp *Checkout BC*; Context Map (Checkout = Customer của Catalog/Inventory/Order/Payment); bề mặt hợp đồng + bảo đảm tương tác (SDD §5.1.4); deployment ở grain BC/zone.
+> - **Tech Spec này sở hữu — C4 L3 / nội bộ Checkout Service:** module & component (§3.1), C&C (§3.2), deployment chi tiết per-BC (§3.3 → IaC), domain saga + Redis schema (§4.2–4.3), key flows nội bộ (§5), quyết định **context-local** (§7).
+> - **Đẩy xuống nữa:** field/mã lỗi đầy đủ → OpenAPI/proto; số replica/HPA/secret → IaC/Vault.
+>
+> _(Lưu ý: "L2/L3" ở dòng **Data class** phía trên là **phân lớp dữ liệu** — khác với **C4 L2/L3** dùng ở đây.)_
 
 # 1. Context & Scope
 
@@ -417,19 +424,22 @@ sequenceDiagram
 
 # 7. Decisions & cross-cutting deltas (ADR-style)
 
-**ADR-1 — Orchestration (không choreography) cho luồng checkout.**
+> Đây là **quyết định context-local** của Checkout (ký hiệu `ADR-CHK-*`), phạm vi nội bộ BC — **khác** với **ADR register hệ thống** (quyết định nặng-kiến-trúc liên-BC) ở SDD v2.2 §11. Quyết định ở đây hỗ trợ/cụ thể hóa các ADR hệ thống liên quan (vd ADR-0003 Orchestration, ADR-0005 Idempotency, ADR-0006 Escrow).
+
+**ADR-CHK-1 — Orchestration (không choreography) cho luồng checkout.**
+Checkout cần kiểm soát compensation tập trung vì liên quan tiền (escrow). Choreography khó đảm bảo thứ tự rollback và phát hiện reservation mồ côi. _Hệ quả:_ Checkout là single point of coordination; nếu down → không checkout được (chấp nhận — Tier 2).
 Checkout cần kiểm soát compensation tập trung vì liên quan tiền (escrow). Choreography khó đảm bảo thứ tự rollback và phát hiện reservation mồ côi. _Hệ quả:_ Checkout là single point of coordination; nếu down → không checkout được (chấp nhận — Tier 2).
 
-**ADR-2 — Một escrow cho tổng giỏ (không per-Merchant escrow).**
+**ADR-CHK-2 — Một escrow cho tổng giỏ (không per-Merchant escrow).**
 Buyer trả một lần cho toàn bộ giỏ; Payment giữ tổng, phân bổ khi settle (sau khi từng đơn Merchant hoàn tất). _Hệ quả:_ đơn giản hóa checkout flow; phức tạp hơn ở Settlement (Payment Svc).
 
-**ADR-3 — Stateless + Redis session (không DB).**
+**ADR-CHK-3 — Stateless + Redis session (không DB).**
 Checkout không cần durability — phiên có TTL ngắn, dữ liệu bền vững thuộc Order/Payment. Giảm complexity, scale dễ. _Hệ quả:_ mất Redis = mất idempotency tạm thời; reservation tự giải phóng qua TTL.
 
-**ADR-4 — Giá snapshot server-side (không tin client).**
+**ADR-CHK-4 — Giá snapshot server-side (không tin client).**
 Client gửi SKU + quantity; Checkout gọi Catalog lấy giá thực. Chống giá giả / manipulation. _Hệ quả:_ thêm một gọi gRPC; nếu Catalog down → checkout fail (fail-safe, không tạo đơn sai giá).
 
-**ADR-5 — Reservation TTL 15 phút.**
+**ADR-CHK-5 — Reservation TTL 15 phút.**
 Đủ thời gian để Buyer hoàn tất thanh toán; không quá dài để block kho. Quá hạn → Inventory tự release → Order auto-cancel. _Cần theo dõi:_ tỷ lệ reservation timeout để tune.
 
 **Cross-cutting deltas:**
@@ -454,7 +464,7 @@ Client gửi SKU + quantity; Checkout gọi Catalog lấy giá thực. Chống g
 | Threat (STRIDE) | Bề mặt | Đối ứng |
 | --- | --- | --- |
 | **S**poofing | Giả JWT / giả service identity | Gateway verify JWT (RS256); gRPC mTLS verify SVID |
-| **T**ampering | Sửa giá trong request | Giá lấy từ Catalog server-side, không từ client (ADR-4) |
+| **T**ampering | Sửa giá trong request | Giá lấy từ Catalog server-side, không từ client (ADR-CHK-4) |
 | **R**epudiation | Buyer phủ nhận đã checkout | Session log ở Redis + pending order ở Order Svc |
 | **I**nfo disclosure | Xem phiên checkout người khác | IDOR check: `userId == JWT.sub` (§4.1) |
 | **D**oS | Spam checkout | Rate limit per-user 5/60s (§4.4) |
