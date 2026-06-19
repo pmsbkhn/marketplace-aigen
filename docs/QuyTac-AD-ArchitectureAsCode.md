@@ -3,8 +3,9 @@
 
 | | |
 | --- | --- |
-| Mã | `STD-AD-AAC-v1.0` |
+| Mã | `STD-AD-AAC-v1.1` |
 | Trạng thái | Draft for review |
+| Thay đổi v1.1 | Thêm **PHẦN I — Quy mô & Phân tầng (hệ lớn)**: định nghĩa grain C4 (R-I1), AD dừng ở L2 / L3→Tech Spec (R-I2), nội dung Tech Spec (R-I3), AD phân tầng trên model liên-bang (R-I4), grain Deployment khi scale (R-I5), ADR phân cấp hệ-thống vs context-local (R-I6), ngưỡng & lộ trình (R-I7). Mở rộng R-B8; bổ sung checklist + ví dụ fitness. |
 | Phạm vi | Mọi tài liệu kiến trúc (SAD/SDD/AD) cấp hệ thống & cấp miền |
 | Neo chuẩn | ISO/IEC/IEEE 42010:2022 · arc42 · C4 model / Structurizr · ADR (Nygard/MADR) · Fitness Functions (Building Evolutionary Architectures) · Docs-as-Code · OpenAPI/AsyncAPI · DDD Context Mapping |
 
@@ -94,7 +95,7 @@ Architecture-as-Code = mô tả kiến trúc (model, view, quyết định, hợ
 - **R-B5 — Zoom đa tầng:** dùng tối thiểu **System Landscape → Container (per bounded context) → Component (chỉ khi cần)**. Mức C4 *Code* không duy trì trong model — sinh từ IDE/tooling khi cần.
 - **R-B6 — Bounded context là hộp ở tầng cao:** ở Landscape, mỗi context là **một hộp**; service/datastore chỉ lộ ở Container diagram của chính context đó.
 - **R-B7 — Datastore là container:** mỗi datastore *nằm trong* hộp context sở hữu; cấm để database trôi nổi ngoài context (giữ grain nhất quán; polyglot không làm rối Landscape).
-- **R-B8 — Ngưỡng tách:** ≤ ~7 context có thể giữ một Container view; ~10+ context hoặc đa P&L → tách Container-per-context **và** chuyển hẳn sang model-as-code.
+- **R-B8 — Ngưỡng tách:** ≤ ~7 context có thể giữ một Container view; ~10+ context hoặc đa P&L → tách Container-per-context **và** chuyển hẳn sang model-as-code. _(Chi tiết quy mô lớn: **PHẦN I**.)_
 - **R-B9 — DDD Context Map đi kèm Landscape:** Landscape cho *topology*; Context Map cho *ngữ nghĩa quan hệ* (Customer–Supplier, Conformist, ACL, OHS, Published Language, Shared Kernel).
 
 ### B.3 Nhãn, legend, quy ước tên
@@ -124,6 +125,47 @@ Architecture-as-Code = mô tả kiến trúc (model, view, quyết định, hợ
 - **R-C5 — Hợp đồng liên-tổ-chức tách riêng:** API dùng chung giữa hai bounded context/đơn vị nên có "Interface/API Contract" do cả provider–consumer đồng sở hữu, không chôn trong Tech Spec nội bộ một bên.
 
 ---
+
+## PHẦN I — QUY TẮC QUY MÔ & PHÂN TẦNG (HỆ LỚN, > ~10 BC)
+
+> Phần A–C viết cho một hệ cỡ vừa / một AD nguyên khối. Khi hệ lớn (nhiều bounded context,
+> nhiều team, đa P&L), một AD nguyên khối với sơ đồ của mọi BC sẽ rối + nhiều team dẫm đè một
+> file. Phần này chốt cách **phân tầng AD và đẩy chi tiết xuống Tech Spec** một cách có luật.
+
+- **R-I1 — Định nghĩa grain C4 (chống nhầm "BC = L2"):** các mức C4 là **L1 System → L2 Container → L3 Component**; *Container* C4 = một đơn vị chạy độc lập = **một service HOẶC một datastore**. Ánh xạ chuẩn:
+  - **Bounded Context** ⇒ vẽ là **một hộp ở System Landscape (≈ L1)** — *trên* L2 một bậc.
+  - **service + database** của BC ⇒ **L2** (AD sở hữu).
+  - **component bên trong một service** (controller / use-case / aggregate / adapter) ⇒ **L3** (Tech Spec sở hữu).
+  - "Bên trong BC" KHÔNG đồng nghĩa "L3": một BC chứa *container (L2)* trước; chỉ khi mở *một container* mới tới *component (L3)*.
+
+- **R-I2 — AD dừng ở L2; L3 → Tech Spec.** AD chỉ giữ tới **L2** cho mỗi BC (service + datastore + ranh giới + quan hệ + hợp đồng). **Component (L3) — cấu trúc nội bộ một service — KHÔNG đặt trong AD**, mà thuộc **Tech Spec của BC đó**. Căn cứ: Tier Test (R-A18) + Dependency Test (R-A19) + P7. Ngoại lệ duy nhất: một component *load-bearing xuyên BC* (vd pattern dùng lại nhiều context) — nêu ở AD như *quyết định*, không vẽ nội bộ.
+
+- **R-I3 — 1 BC = 1 Tech Spec, team sở hữu, chứa L3.** Mỗi BC có **một Tech Spec** do team của BC đó sở hữu, đặt cạnh code, review qua PR (R-B16). Tech Spec chứa: module & component (L3), C&C, **deployment chi tiết per-BC** (→ IaC), domain/data nội bộ, key flows, **quyết định context-local** (R-I6). Khuôn mục cố định để các BC nhất quán (Context&Scope → Requirements → Design overview → Interfaces&data → Key flows → Operations → Decisions → Test → Open questions). AD **trỏ tới** Tech Spec qua bảng correspondence, không sao chép nội dung L3.
+
+- **R-I4 — AD phân tầng trên một model liên-bang (federated).** Ở quy mô lớn: thay vì một AD/model nguyên khối, dùng **một AD landscape mỏng** (Landscape + Context Map + deployment-zone + contracts + decisions + index) **trên một model-as-code liên-bang**:
+  - một **base workspace** định nghĩa mỗi BC là một `softwareSystem` (hộp) + quan hệ;
+  - mỗi BC có **một workspace riêng `extends` base** rồi bơm container (L2) + component (L3) vào hộp của mình (`!element <bc> { … }`);
+  - **correspondence tự động qua trùng identifier** (giảm bảng tay của R-B14): hộp BC ở base ⇄ container/component team bơm vào.
+  - 42010 cho phép **nhiều AD + correspondence rules** — không cần một AD nguyên khối.
+
+- **R-I5 — Grain của Deployment view khi scale (mở rộng R-A8/B8).** Deployment ở grain **L2 (container trên node)** — cùng grain Container view, là chỗ duy nhất mọi container hiện cùng lúc. Ở **≥10 BC** áp cùng luật tách:
+  - **AD giữ grain BC/zone:** trust-zone, ánh xạ container→node *mức quyết định*, ràng buộc (egress, AZ/HA). Model-as-code dùng `softwareSystemInstance` (grain BC).
+  - **Đẩy xuống Tech Spec/IaC:** số replica, ngưỡng HPA, sizing, và **deployment per-BC** (`containerInstance`). Đây là phần R-A8 vốn loại khỏi AD ("YAML/IaC, sizing cụ thể").
+
+- **R-I6 — ADR phân cấp: register hệ-thống vs context-local.**
+  - **ADR hệ thống** (`ADR-NNNN`, đánh số toàn cục) — quyết định nặng **liên-BC / cross-cutting**; sống ở AD register (R-A13) / `/docs/adr`.
+  - **ADR context-local** (`ADR-<BC>-N`) — quyết định **nội bộ một BC**; sống trong Tech Spec của BC, **tham chiếu** tới ADR hệ thống liên quan. Không trộn hai cấp vào một dãy số.
+
+- **R-I7 — Ngưỡng & lộ trình (gom R-B8 + R-I*).**
+
+  | Quy mô | Structure view | Deployment | L3 | Model |
+  | --- | --- | --- | --- | --- |
+  | **≤ ~7 BC** | Landscape + Context Map + **1 archetype + vài Container ví dụ** + bảng | 1 sơ đồ hệ thống còn đọc được | Tech Spec (khuyến nghị) | Mermaid/docs-as-code chấp nhận được |
+  | **≥ ~10 BC / đa P&L** | Landscape + Context Map ở AD; **Container/Component per-BC RỜI về Tech Spec**, sinh từ model | **bắt buộc** tách: AD grain BC/zone, chi tiết → Tech Spec/IaC | **bắt buộc** ở Tech Spec | **bắt buộc** model-as-code liên-bang (R-I4) |
+
+  Điều kiện chuyển: chạm ~10 BC, hoặc một Container/Deployment diagram bắt đầu "tất-cả-trong-một" (R-B4/G3), hoặc nhiều team tranh chấp sửa cùng một file AD.
+
+- **R-I8 — Enforce:** R-I2/R-I3 kiểm bằng *review gate* (PR Tech Spec); R-I4 kiểm bằng *fitness*: model liên-bang parse + validate per-workspace trong CI, **drift check** so model với code/route/topic (R-E3/E4). Per-BC view không được nhúng tay vào AD trung tâm (lint cấu trúc repo).
 
 ## PHẦN D — QUY TẮC QUYẾT ĐỊNH (ADR)
 
@@ -159,6 +201,9 @@ Architecture-as-Code = mô tả kiến trúc (model, view, quyết định, hợ
 | Payment egress chỉ tới PG/Bank | Network policy check |
 | Mọi service-to-service là mTLS | Mesh policy test |
 | Data residency / vùng cho phép | Policy chặn deploy sai region |
+| Per-BC view không nhúng tay vào AD trung tâm (R-I4) | Lint cấu trúc repo: AD chỉ chứa landscape/context-map; container/component sinh từ model |
+| Model liên-bang nhất quán (R-I4/I8) | CI: mỗi workspace `extends` parse + validate; drift check model ↔ code/route/topic |
+| L3 không rò vào AD (R-I2) | Lint: file AD không chứa diagram mức component cho ≥ ngưỡng BC |
 
 ---
 
@@ -224,6 +269,11 @@ Architecture-as-Code = mô tả kiến trúc (model, view, quyết định, hợ
 | 13 | TBD đánh dấu tường minh + ADR/issue theo dõi (R-A22) | ☐ |
 | 14 | Version + changelog + ADR cập nhật (R-B15) | ☐ |
 | 15 | AD/ADR/model/contract cùng repo, review qua PR (R-B16/F3) | ☐ |
+| 16 | (Hệ lớn) Grain C4 rõ: BC=Landscape, service/DB=L2, component=L3 (R-I1) | ☐ |
+| 17 | (Hệ lớn) AD dừng ở L2; L3 ở Tech Spec; 1 BC = 1 Tech Spec team-owned (R-I2/I3) | ☐ |
+| 18 | (Hệ lớn ≥10 BC) Container/Component per-BC rời AD, sinh từ model liên-bang (R-I4/I7) | ☐ |
+| 19 | (Hệ lớn) Deployment: AD grain BC/zone; sizing/per-BC → Tech Spec/IaC (R-I5) | ☐ |
+| 20 | ADR phân cấp: register hệ-thống (ADR-NNNN) vs context-local (ADR-&lt;BC&gt;-N) (R-I6) | ☐ |
 
 ---
 
