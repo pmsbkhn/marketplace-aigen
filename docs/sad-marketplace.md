@@ -1,4 +1,3 @@
-```markdown
 # SYSTEM DESIGN DOCUMENT — E-commerce Marketplace
 
 | Thông tin tài liệu | Giá trị |
@@ -118,7 +117,7 @@ graph TD
 
 | Kiểu | Lý do | Trade-off |
 | --- | --- | --- |
-| Microservices theo Bounded Context (DDD) + Orchestration (Checkout) + Event-Driven | Mỗi context scale & deploy độc lập; Checkout làm "nhạc trưởng" cho luồng phức tạp; event cho liên kết lỏng | Phức tạp phân tán: cần saga/compensation, distributed tracing, eventual consistency |
+| Microservices theo Bounded Context (DDD) + Orchestration (Checkout) + Event-Driven | Mỗi context scale & deploy độc lập; Checkout làm điều phối cho luồng phức tạp; event cho liên kết lỏng lẻo | Phức tạp phân tán: cần saga/compensation, distributed tracing, eventual consistency |
 
 ### 2.1.1 Nguyên tắc thiết kế kiến trúc
 
@@ -875,5 +874,5 @@ Escrow (giữ tiền trung gian) · Settlement (đối soát) · Payout (chi tr�
 | Security Reviewer | _____ | _____ |
 | Tech Lead / Architect | _____ | _____ |
 | CTO / Head of Engineering | _____ | _____ |
-```
+
 
