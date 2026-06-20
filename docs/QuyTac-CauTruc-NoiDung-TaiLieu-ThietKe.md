@@ -1,161 +1,231 @@
-# QUY TẮC CẤU TRÚC & NỘI DUNG TÀI LIỆU THIẾT KẾ
-## (viết tay / truyền thống — độc lập với cách biểu diễn)
+# QUY TẮC NỘI DUNG & CÁCH VIẾT TÀI LIỆU KIẾN TRÚC
+## (AD/SDD + Tech Spec — viết tay)
 
 | | |
 | --- | --- |
-| Mã | `STD-DESIGN-DOC-v1.0` |
+| Mã | `STD-DESIGN-DOC-v1.1` |
 | Trạng thái | Draft for review |
 | Phạm vi | Tài liệu thiết kế cấp hệ thống (**AD/SAD/SDD**) và cấp miền (**Tech Spec**), viết bằng Markdown |
-| Neo chuẩn | ISO/IEC/IEEE 42010:2022 (stakeholder/concern/view) · arc42 (12 phần) · C4 (mức trừu tượng) · ADR (Nygard/MADR) · DDD |
-| Quan hệ | Chuẩn này quy định **THÔNG TIN GÌ / ĐẶT Ở ĐÂU**. Cách **BIỂU DIỄN bằng code** (diagrams-as-code, một-model-nhiều-view, Structurizr) và **TỰ ĐỘNG HÓA** (fitness function, CI, drift, model liên-bang) thuộc chuẩn riêng **`STD-AD-AAC`** — áp *sau*, *trên* chuẩn này. |
-
-> **Mục đích:** để một người viết được AD/SDD + Tech Spec **đúng & đủ** bằng Markdown thuần (như các file ví dụ `SDD-MKTPLACE-CORE-v2.2.md`, `tech-spec/TechSpec-Marketplace-*.md`) — *trước khi* nghĩ tới công cụ. Chốt cấu trúc nội dung chuẩn ở đây rồi mới layer AaC lên.
->
-> **Ngoài phạm vi (thuộc `STD-AD-AAC`):** diagram phải là code · một model nhiều view · validate/render/drift trong CI · fitness function · bố cục repo/pipeline · model liên-bang (extends). Ở chuẩn này: sơ đồ chỉ cần **đúng nội dung & đúng mức trừu tượng**, vẽ bằng gì (Mermaid/PlantUML/ảnh) là tùy.
+| Neo chuẩn | ISO/IEC/IEEE 42010:2022 · arc42 · C4 (mức trừu tượng) · ADR (Nygard/MADR) · DDD |
+| Thay đổi v1.1 | Tái cấu trúc theo review: nêu rõ **chuẩn bootstrapping** + giới hạn (§0.3); thêm trường **`verify:`** cho mọi mệnh đề kiểm-chứng-được (§8); **đóng quan hệ adequacy 42010** (view khai `frames`, DoD phủ concern); truy vết **chuỗi → đồ thị có ngữ nghĩa cạnh** (§6); áp N2/N3 lên chính chuẩn — **AD-Lite + mở rộng theo ngưỡng** (§3); thêm **kịch bản thay đổi/tiến hóa** (§8.3); tách correspondence **logical/physical** + **Context Map kiểu quan hệ chiến lược** (§7); ADR là file riêng + sổ tradeoff (§9); versioning **lát cắt nhất quán** (§10); bổ sung §bảo mật. Bỏ mọi nội dung AaC. |
 
 ---
 
-## 0. Nguyên lý nội dung (5 điều)
+## 0. Mục đích, phạm vi & giới hạn
+
+### 0.1 Mục đích
+Để một người **viết được AD/SDD + Tech Spec đúng & đủ bằng Markdown thuần**: tài liệu cần **những mục nào**, mỗi mục **phải chứa nội dung gì**, và **viết thế nào**. Đây là chuẩn về *nội dung và cách viết*, không phải về công cụ.
+
+### 0.2 Vết cắt phạm vi (đọc kỹ — đây là ranh giới thật)
+Chuẩn này coi **đầu vào của con người** là trọng tâm:
+
+- **TRONG phạm vi:** *thông tin* cần có + *quy trình do người làm* để tạo và soát nó (khuôn mục, luật viết, kỷ luật "N/A — lý do", vòng đời ADR, checklist DoD, review gate).
+- **NGOÀI phạm vi:** *cách mã hóa/biểu diễn bằng công cụ* và *cưỡng chế tự động* (sinh sơ đồ từ một model, kiểm nhất quán/drift bằng máy, validate trong pipeline). Chuẩn này **không** quy định, **không** phụ thuộc chúng.
+
+> Tức ranh giới là **quyết-định-&-quy-trình-của-người** (ở đây) vs **mã-hóa-&-cưỡng-chế-bằng-máy** (ngoài) — *không* phải "thông tin vs ký pháp". Một mệnh đề kiểm-chứng-được (NFR/SLO/invariant) thuộc đây; *phép kiểm tự động* thực thi nó thì ngoài — chuẩn này chỉ giữ **con trỏ** tới phép kiểm (§8).
+
+### 0.3 Giới hạn trung thực — đây là chuẩn *bootstrapping*, không phải trạng-thái-ổn-định
+Viết tay đưa bạn tới một **v1.0 sạch & đúng**. Nhưng ở đúng quy mô chuẩn nhắm tới (nhiều BC, nhiều đội, có kiến trúc sư riêng), **một số bảo đảm KHÔNG co giãn theo sức người** và sẽ **xuống cấp theo thời gian** nếu chỉ dựa review tay:
+
+| Bảo đảm | Viết tay v1.0 | Duy trì ở quy mô |
+| --- | --- | --- |
+| Nhất quán đa-view (§7) | làm được | **không** — cần một nguồn sự thật sinh ra các view |
+| Truy vết đầy đủ, không cạnh gãy (§6) | làm được | **không** — cần kiểm tham chiếu tự động |
+| Không drift (tài liệu ↔ hiện thực) | đúng tại t0 | **không** — cần đối chiếu máy |
+
+→ Khi chạm các giới hạn này, cần lớp **mã-hóa + cưỡng chế tự động** (ngoài phạm vi chuẩn này). Chuẩn nội dung là **đầu vào** cho lớp đó: nó định nghĩa *thông tin gì cần đúng*, lớp kia lo *giữ cho đúng*.
+
+---
+
+## 1. Nguyên lý nội dung
 
 | # | Nguyên lý | Hệ quả khi viết |
 | --- | --- | --- |
-| N1 | **Đúng mức trừu tượng cho đúng người đọc** | Mỗi mục một câu chuyện; không trộn grain (hệ thống ↔ nội bộ một service) |
+| N1 | **Đúng mức trừu tượng cho đúng người đọc** | Mỗi mục/sơ đồ một câu chuyện, một grain; không trộn hệ-thống ↔ nội-bộ-service |
 | N2 | **Lõi ổn định, đẩy chi tiết xuống** | AD giữ thứ ít đổi (quyết định, ranh giới, hợp đồng); chi tiết hay đổi → Tech Spec/contract/code |
-| N3 | **Chỉ ghi cái bên ngoài phụ thuộc** | Đưa vào tài liệu cái người/đội khác cần; cái tự do đổi nội bộ → tầng dưới |
-| N4 | **Truy vết được** | Mọi mục nối được tới mục nguồn (mục tiêu ↔ NFR ↔ quyết định ↔ view ↔ Tech Spec) |
-| N5 | **Chưa chốt thì nói thẳng (TBD)** | Không bịa cho "đủ"; đánh dấu `TBD` + nơi theo dõi |
+| N3 | **Chỉ ghi cái bên ngoài phụ thuộc** | Đưa vào tài liệu *bề mặt* người/đội khác dựa vào; cái tự do đổi nội bộ → tầng dưới |
+| N4 | **Truy vết được (đồ thị)** | Mọi mục nối được tới mục liên quan bằng ID + ngữ nghĩa cạnh (§6) |
+| N5 | **Chưa chốt thì nói thẳng (TBD)** | Không bịa cho "đủ"; `TBD` + nơi theo dõi |
+
+> **Chuẩn áp N2/N3 cho chính nó:** vì thế cấu trúc AD **không** phẳng — có **lõi bất biến (AD-Lite)** mọi tài liệu phải có, và **mở rộng bật theo ngưỡng** (§3). Một bộ khung nặng cố định sẽ hoặc không được viết, hoặc viết một lần rồi rữa.
 
 ---
 
-## 1. Hai loại tài liệu & quan hệ
+## 2. Hai loại tài liệu
 
-| Loại | Trả lời câu hỏi | Phạm vi | Ai sở hữu | Vòng đời |
+| Loại | Trả lời | Phạm vi | Sở hữu | Vòng đời |
 | --- | --- | --- | --- | --- |
-| **AD / SDD** (cấp hệ thống) | *Vì sao chia & liên kết thế này?* | toàn hệ; ranh giới, quan hệ, hợp đồng, quyết định nặng | Kiến trúc sư / Platform | ổn định |
-| **Tech Spec** (cấp miền / 1 BC) | *Context này hoạt động ra sao để hiện thực?* | nội bộ một bounded context | Team của BC đó | đổi thường xuyên |
+| **AD / SDD** | *Vì sao chia & liên kết thế này?* | toàn hệ: ranh giới, quan hệ, hợp đồng, quyết định nặng | Kiến trúc sư / Platform | ổn định |
+| **Tech Spec** | *Context này chạy ra sao để hiện thực?* | nội bộ **một** bounded context | Team của BC | đổi thường xuyên |
 
-> **1 Bounded Context = 1 Tech Spec.** AD **trỏ tới** Tech Spec (bảng correspondence), **không** sao chép nội dung chi tiết của nó. Phân định "cái gì ở AD vs Tech Spec" — xem §4.
-
----
-
-## 2. Cấu trúc tài liệu AD / SDD
-
-> Khuôn mục bắt buộc (theo arc42 + 42010, đã rút gọn cho thực dụng — khớp `SDD-MKTPLACE-CORE-v2.2.md`). Mục không dùng phải ghi **"N/A — lý do"**, không bỏ trống.
-
-**Header:** mã tài liệu · phiên bản (semver) · trạng thái · ngày · tác giả/người duyệt · **bảng lịch sử thay đổi** · mức bảo mật.
-
-| Mục | Phải chứa | KHÔNG chứa (đẩy xuống) |
-| --- | --- | --- |
-| **1. Tổng quan** | 1.1 Mục tiêu + KPI đo được · 1.2 Phạm vi (in/out scope) · 1.3 Stakeholders & mối quan tâm · 1.4 Giả định & Ràng buộc (kỹ thuật/pháp lý/tổ chức) | KPI vận hành chi tiết; giá trị cấu hình |
-| **2. Kiến trúc tổng thể** | 2.1 Kiểu kiến trúc + lý do + nguyên tắc · 2.2 View cấu trúc đa tầng: **Context (L1) → Landscape (BC=hộp) → Container/BC (L2) → Component (L3, chỉ khi cần)** + **ghi chú grain** (BC=Landscape; service/DB=L2; component=L3) + **phân loại công nghệ binding vs indicative** + quy ước nhãn/legend · 2.3 Triển khai (môi trường, topology, deployment ở grain BC/zone) · 2.4 **Bảng correspondence** (Landscape↔Container↔Deployment↔Tech Spec) | Class/hàm nội bộ; thuật toán; runtime/framework từng service (indicative → Tech Spec); YAML/sizing |
-| **3. Thành phần** | bảng tổng quan (tên · loại · trách nhiệm 1 dòng) + mỗi thành phần một ô tóm tắt **trỏ tới Tech Spec** | mô tả module/component nội bộ (→ Tech Spec) |
-| **4. Luồng dữ liệu** | luồng chính (happy path), luồng bù trừ/saga, luồng bất đồng bộ — **ở grain hệ thống** (service↔service) | pseudocode; log line; bước nội bộ một service |
-| **5. Giao diện** | quy ước chung; phân loại interface theo ranh giới tin cậy; danh sách API/event **quan trọng + bảo đảm tương tác** (sync/async, consistency, idempotency, ordering, delivery, lỗi); **trỏ** OpenAPI/AsyncAPI | field/method/mã lỗi đầy đủ (→ OpenAPI/AsyncAPI) |
-| **6. Kiến trúc dữ liệu** | quyền sở hữu dữ liệu theo context; ranh giới & reference logic xuyên context; phân loại & retention; bất biến dữ liệu | schema cột; ERD chi tiết; DDL (→ Tech Spec/migration) |
-| **7. Bảo mật** | trust boundary; authn/authz; mã hóa; (target vs current nếu theo lộ trình); bảng invariant + nơi enforce (review/tự động) | IAM policy literal; rule cụ thể |
-| **8. Chất lượng & mở rộng** | NFR đo được (ISO 25010); SLA/SLO; capacity; chiến lược scaling/caching; **cây chất lượng + kịch bản** (stimulus→response đo được, nối về mục tiêu) | — |
-| **9. Lỗi & phục hồi** | phân loại lỗi; resilience pattern (saga/idempotency/DLQ/circuit breaker); DR (RTO/RPO theo tier) | runbook chi tiết |
-| **10. Quan sát (Observability)** | logging/metrics/tracing/alerting/dashboard ở mức nguyên tắc + chỉ số chính | cấu hình agent cụ thể |
-| **11. ADR Register (hệ thống)** | liệt kê quyết định **nặng-kiến-trúc liên-BC**: id `ADR-NNNN`, tiêu đề, trạng thái, rationale ngắn, view/cơ chế liên quan (xem §7 format) | — |
-| **12. Rủi ro & Nợ kỹ thuật** | rủi ro/nợ + tác động + biện pháp/theo dõi | — |
-| **13. Mục theo miền** | mục bắt buộc theo lĩnh vực (vd AI Security) hoặc **"N/A — lý do"** | — |
-| **Phụ lục** | A. Tham chiếu + **bảng SAD↔Tech Spec** · B. Glossary · C. Checklist trước ban hành · D. Phê duyệt | — |
+**1 BC = 1 Tech Spec.** AD **trỏ tới** Tech Spec, **không** sao chép nội dung chi tiết của nó.
 
 ---
 
-## 3. Cấu trúc tài liệu Tech Spec (per Bounded Context)
+## 3. Cấu trúc AD/SDD — Lõi (AD-Lite) + Mở rộng theo ngưỡng
 
-> Khuôn mục cố định để các BC nhất quán (khớp `tech-spec/TechSpec-Marketplace-*.md`).
+> Cột **Tầng**: `Lõi` = mọi AD bắt buộc (AD-Lite); `Mở rộng (trigger)` = chỉ viết khi điều kiện bật. Mục bật mà bỏ → ghi **"N/A — lý do"**. Header luôn có: mã · phiên bản (semver) · trạng thái · ngày · tác giả/duyệt · **lịch sử thay đổi** · mức bảo mật.
 
-**Header:** Status · Owner · Reviewers · **Liên kết lên AD** (mục nào của SDD) + OpenAPI/AsyncAPI + IaC · Classification (tier + data class) · **Khối "Ranh giới tầng"** (AD giữ C4 L2 gì · Tech Spec sở hữu C4 L3 gì · đẩy xuống nữa cái gì).
+| Mục AD | Tầng (trigger) | Phải chứa | Đẩy xuống |
+| --- | --- | --- | --- |
+| **1. Tổng quan** (mục tiêu+KPI, phạm vi in/out, **stakeholders & concern**, ràng buộc) | **Lõi** | mỗi mục tiêu có KPI đo được; mỗi stakeholder có ≥1 concern (concern phải được gán ở §6) | KPI vận hành chi tiết; giá trị config |
+| **2. Kiến trúc tổng thể** (kiểu KT + nguyên tắc; **view cấu trúc đa tầng**; **correspondence logical** = Context Map) | **Lõi** | Context (L1) → Landscape (BC=hộp) → Container/BC (L2); ghi chú grain; mỗi view khai **`frames:`** concern; binding vs indicative (+vòng đời §5) | component nội bộ (L3); runtime per-service (indicative→Tech Spec) |
+| **3. Luồng & hành vi** (happy/compensation/async) ở grain hệ thống | **Lõi** | luồng chính + luồng lỗi/saga giữa service↔service | pseudocode; bước nội bộ một service |
+| **4. Hợp đồng giao tiếp** (interface/event quan trọng + **bảng bảo đảm tương tác**) | **Lõi** | sync/async, consistency, **idempotency**, ordering, delivery, hành vi lỗi; **trỏ** OpenAPI/AsyncAPI | field/method/mã lỗi đầy đủ |
+| **5. Quyết định (ADR Index)** | **Lõi** | index các ADR nặng (id, tiêu đề, trạng thái) — ADR là **file riêng** (§9) | nguyên văn ADR |
+| **Glossary** (Ubiquitous Language) | **Lõi** | thuật ngữ + **Bounded Context** + bí danh tránh | — |
+| **6. Kiến trúc dữ liệu** | Mở rộng (BC sở hữu dữ liệu bền vững / PII) | quyền sở hữu theo context; reference logic xuyên context; phân loại + retention; bất biến dữ liệu | schema cột; ERD chi tiết; DDL |
+| **7. Bảo mật** | Mở rộng (có trust boundary ngoài / tiền / PII / compliance) | trust boundary; authn/authz; mã hóa; **tham chiếu threat model**; data residency; ranh giới secrets; **supply-chain/SBOM**; bảng invariant + **`verify:`** | IAM policy literal |
+| **8. Chất lượng, kịch bản & tiến hóa** | Lõi (NFR) + Mở rộng (cây chất lượng khi đa thuộc tính) | NFR đo được + **`verify:`**; kịch bản vận hành + **kịch bản thay đổi/tiến hóa** (§8) | — |
+| **9. Lỗi & phục hồi (DR)** | Mở rộng (tier ≥ business-critical) | resilience pattern; RTO/RPO theo tier | runbook |
+| **10. Quan sát (Observability)** | Mở rộng (có service runtime) | logging/metrics/tracing/alert ở mức nguyên tắc + chỉ số chính | cấu hình agent |
+| **11. Correspondence physical** (BC ⟷ container ⟷ deployment) | Mở rộng (≥ ~vài BC / topology không tầm thường) | bảng nhiều-nhiều (§7) | sizing/replica → IaC/Tech Spec |
+| **12. Rủi ro & Nợ kỹ thuật** | **Lõi** | rủi ro/nợ + tác động + biện pháp/theo dõi | — |
+| **13. Mục theo miền** | Mở rộng (lĩnh vực đòi hỏi: AI, fintech, y tế…) | nội dung bắt buộc theo miền, hoặc **"N/A — lý do"** | — |
+| **Phụ lục** | **Lõi** | A. Tham chiếu + bảng SAD↔Tech Spec · B. (Glossary đã ở Lõi) · C. Checklist · D. Phê duyệt | — |
+
+### Luật viết một số mục (W)
+- **W1 — Mục tiêu & NFR phải đo được.** Mỗi NFR: chỉ tiêu (số + đơn vị) · cách đo · nguồn · phạm vi · **`verify:`** (§8). Không đo được = mong muốn, không phải NFR.
+- **W2 — View phải khai `frames:`.** Mỗi view (Context/Landscape/Container/Deployment…) liệt kê concern (của §1) mà nó trả lời. (Đóng adequacy 42010 — §6.)
+- **W3 — Sơ đồ một grain.** Một sơ đồ = một mức trừu tượng (không trộn BC-hộp với component nội bộ).
+- **W4 — Hợp đồng chỉ nêu *đảm bảo*, trỏ đặc tả.** AD ghi capability + bảo đảm tương tác; field đầy đủ ở OpenAPI/AsyncAPI.
+- **W5 — Ghi chú grain C4 bắt buộc:** BC = hộp ở **Landscape (≈L1)**; **service + datastore = L2**; **component nội bộ = L3**. "Bên trong BC" ≠ "L3".
+
+---
+
+## 4. Cấu trúc Tech Spec (per Bounded Context)
+
+**Header:** Status · Owner · Reviewers · **Liên kết lên AD** (mục nào) + OpenAPI/AsyncAPI + IaC · Classification (tier + data class) · **Khối "Ranh giới tầng"**: AD giữ **C4 L2** gì · Tech Spec sở hữu **C4 L3** gì · đẩy xuống nữa cái gì.
 
 | Mục | Phải chứa |
 | --- | --- |
-| **1. Context & Scope** | ranh giới BC (vào/ra), trust boundary, goals & non-goals |
-| **2. Requirements** | FR + NFR/SLO của riêng BC (nối về NFR hệ thống) |
-| **3. Design overview** | 3.1 **Module view** (cấu trúc tĩnh — code chia ra sao) · 3.2 **C&C view** (runtime + connector catalog) · 3.3 **Deployment per-BC** (chi tiết: subnet/replica/policy → IaC) |
-| **4. Interfaces & data** | API (ngữ nghĩa + mã lỗi quan trọng — **trỏ** OpenAPI/proto) · domain model + invariant · data/schema nội bộ · config & tunables · xử lý dữ liệu cá nhân |
-| **5. Key flows** | sequence ở grain C&C: happy path, compensation, fail-fast |
-| **6. Operations & Resilience (delta)** | chỉ phần khác/cụ thể hóa so với DR platform |
-| **7. Decisions (context-local) + cross-cutting** | `ADR-<BC>-N` (xem §7) + ghi chú cross-cutting (security/observability/tenant) |
-| **8. Test strategy** | unit/contract/integration/failure-injection + **fitness/acceptance** |
-| **9. Open questions** | TBD nội bộ BC |
+| 1. Context & Scope | ranh giới BC (vào/ra), trust boundary, goals & non-goals |
+| 2. Requirements | FR + NFR/SLO của BC (mỗi cái `verify:`), nối về NFR hệ thống |
+| 3. Design overview | 3.1 Module view (tĩnh) · 3.2 C&C (runtime + connector) · 3.3 Deployment per-BC (chi tiết → IaC) |
+| 4. Interfaces & data | API (ngữ nghĩa, trỏ OpenAPI) · domain model + **invariant + `verify:`** · data/schema nội bộ · config · dữ liệu cá nhân |
+| 5. Key flows | sequence grain C&C: happy / compensation / fail-fast |
+| 6. Operations & Resilience (delta) | phần khác/cụ thể hóa so với DR platform |
+| 7. Decisions (context-local `ADR-<BC>-N`) + cross-cutting | quyết định nội bộ BC; tham chiếu ADR hệ thống liên quan |
+| 8. Test strategy | unit/contract/integration/failure-injection + acceptance |
+| 9. Open questions | TBD nội bộ BC |
 
 ---
 
-## 4. Luật lọc & phân tầng nội dung (AD ↔ Tech Spec ↔ Contract/Code)
+## 5. Luật lọc & phân tầng nội dung (AD ↔ Tech Spec ↔ Contract/Code)
 
-**Ba câu hỏi, ba tầng:** AD = *vì sao chia & liên kết thế này* · Tech Spec = *context này chạy ra sao* · Code/Contract = *máy làm chính xác gì*.
-
-- **L1 — Tier Test:** đổi một *chi tiết hiện thực* (đổi tên field, thêm param optional, đổi framework) mà phải sửa AD → **sai tầng**. AD chỉ đổi khi một *quyết định kiến trúc* đổi.
-- **L2 — Dependency Test:** chỉ đưa vào AD cái *bên ngoài phụ thuộc* (bề mặt/hợp đồng). Cái tự do đổi nội bộ → Tech Spec/code.
-- **L3 — Binding vs Indicative:** công nghệ chỉ vào AD khi **load-bearing** (ràng buộc chất lượng/khả mở rộng — event bus, kiểu DB, search engine, WORM). **Framework/runtime từng service là indicative → nêu quyết định *polyglot*, đẩy tên cụ thể xuống Tech Spec.** (Cấm liệt kê runtime per-service ở AD như một quyết định.)
-- **L4 — Field mang sức nặng:** chỉ ghi field *là quyết định* (correlation id, tenant id, idempotency key, version, partition key, field qua ranh giới tin cậy). Field còn lại → contract.
-- **L5 — TBD tường minh:** thông tin chưa chốt đánh dấu `TBD` + nơi theo dõi (issue/ADR).
-
-**Ghi chú grain C4 (chống nhầm "BC = L2"):** Bounded Context ⇒ hộp ở **Landscape (≈L1)**; **service + datastore ⇒ L2** (AD sở hữu); **component bên trong service ⇒ L3** (Tech Spec sở hữu). "Bên trong BC" ≠ "L3" — BC chứa container (L2) trước, mở container mới tới component (L3).
-
-**Phân tầng theo quy mô:**
-- **AD dừng ở L2; L3 → Tech Spec** (mọi quy mô; bắt buộc khi nhiều BC/team).
-- Deployment: AD ở grain **BC/zone**; sizing/replica + deployment chi tiết per-BC → Tech Spec/IaC.
-
-> _(Việc các per-BC view có nên RỜI hẳn khỏi file AD trung tâm khi ≥10 BC, và cơ chế "một model nhiều view" để làm điều đó — thuộc `STD-AD-AAC`. Ở chuẩn này chỉ cần: nội dung L3 **đặt trong Tech Spec**, AD **trỏ tới**.)_
+- **L1 — Tier Test:** đổi *chi tiết hiện thực* (đổi field, thêm param optional, đổi framework) mà phải sửa AD → **sai tầng**.
+- **L2 — Dependency Test:** chỉ đưa vào AD cái *bên ngoài phụ thuộc* (bề mặt/hợp đồng).
+- **L3 — Binding vs Indicative + vòng đời:** công nghệ vào AD chỉ khi **load-bearing**; framework/runtime per-service là **indicative** → Tech Spec. **Vòng đời:** một lựa chọn indicative tích tụ đủ kẻ phụ thuộc có thể âm thầm thành binding → có **trigger tái-phân-loại** (vd ≥k context dựa vào) → viết ADR nâng cấp. Không để kiến trúc ossify trong im lặng.
+- **L4 — Field mang sức nặng:** chỉ ghi field *là quyết định* (correlation/tenant/idempotency/version/partition key, field qua ranh giới tin cậy). Còn lại → contract.
+- **L5 — TBD tường minh:** đánh dấu + nơi theo dõi.
+- **AD dừng ở L2; L3 → Tech Spec** (bắt buộc khi nhiều BC/đội). Deployment: AD grain **BC/zone**; sizing/per-BC → Tech Spec/IaC.
 
 ---
 
-## 5. Truy vết & Correspondence (nội dung)
+## 6. Truy vết = ĐỒ THỊ (không phải chuỗi)
 
-- AD phải có **bảng correspondence**: mỗi **BC (Landscape)** ⇄ một dòng **Container** (service+datastore) ⇄ một (cụm) **Deployment** ⇄ một **Tech Spec**. Quan hệ xuyên-BC chỉ khai ở Landscape/Context Map, **không lặp** ở tầng Container.
-- Mỗi mục nội dung nối được về nguồn: Mục tiêu → NFR → Quyết định (ADR) → View → Tech Spec → Test.
-- Các view của cùng một hệ phải **nhất quán** (không mâu thuẫn nhau). _(Cách phát hiện mâu thuẫn tự động = AaC; ở đây là trách nhiệm review.)_
+Truy vết là **đồ thị nhiều-nhiều**, không phải chuỗi tuyến tính. Mỗi phần tử có **ID** (Goal/CONCERN/NFR/ADR/VIEW/BC/TechSpec/Test…); mỗi liên kết mang **ngữ nghĩa cạnh**:
 
----
+| Cạnh | Ý nghĩa |
+| --- | --- |
+| `satisfies` | NFR/quyết định **đáp** một concern/mục tiêu |
+| `refines` | mục dưới **làm mịn** mục trên (NFR ← mục tiêu; Tech Spec ← AD) |
+| `constrains` | ràng buộc/ADR **giới hạn** một mục khác |
+| `verifies` | test/phép kiểm **chứng minh** một mệnh đề (§8) |
+| `supersedes` | ADR **thay thế** ADR cũ |
+| `trades-off` | ADR **đánh đổi** giữa các concern đối kháng (§9) |
 
-## 6. ADR — định dạng & phân cấp (nội dung)
+Quy tắc: một NFR có thể biện minh nhiều ADR; một ADR đáp nhiều NFR; một view phục vụ nhiều concern — **không** giả định 1:1.
 
-- **Mọi quyết định nặng-kiến-trúc → một ADR.** Format: **Context → Decision → Status → Consequences** (Nygard) hoặc MADR; trạng thái `Proposed → Accepted → Superseded by …`; immutable (không xóa, viết ADR mới supersede).
-- **Phân cấp (bắt buộc khi nhiều BC):**
-  - **ADR hệ thống** — `ADR-NNNN`, đánh số toàn cục — quyết định **liên-BC / cross-cutting**; ở **ADR Register của AD** (mục 11).
-  - **ADR context-local** — `ADR-<BC>-N` — quyết định **nội bộ một BC**; ở **Tech Spec** của BC, **tham chiếu** ADR hệ thống liên quan.
-  - Không trộn hai cấp vào một dãy số.
-
-## 7. Glossary (Ubiquitous Language)
-
-Bảng thuật ngữ bắt buộc ở AD: ID · Thuật ngữ · Định nghĩa thống nhất · **Bounded Context** · bí danh cần tránh · ví dụ. Cột Bounded Context là điểm mấu chốt — cùng một từ mang nghĩa khác ở hai context là tín hiệu ranh giới.
+**Đóng quan hệ adequacy (42010):** mỗi **concern** thu thập ở mục 1 phải được **frame bởi ≥1 view** (mỗi view khai `frames:` — W2). Concern không view nào frame = lỗ hổng → bổ sung view hoặc loại concern. (Kiểm ở DoD §13.)
 
 ---
 
-## 8. Anti-patterns (cấm — về nội dung)
+## 7. Correspondence — tách Logical & Physical
+
+Ranh giới **miền** (BC, không gian vấn đề) và ranh giới **triển khai** (container, không gian giải pháp) *thường* trùng nhưng **không luôn** (một BC có thể là API + worker + projection + nhiều store; một modular monolith host nhiều BC trong một deployable). **Cấm** giả định BC ≅ deployable. Dùng **hai bảng**:
+
+**7.1 Logical — Context Map (kiểu quan hệ chiến lược).** BC ⇄ BC, mỗi cạnh gắn **kiểu DDD**: *Customer/Supplier, Conformist, Anti-Corruption Layer, Open Host Service, Published Language, Shared Kernel, Partnership*. Đây là **hợp đồng chiến lược/tổ chức** (ai conform theo ai, ai hấp thụ thay đổi) — chính là *topo phụ thuộc* mà N3 nói tới. (Khác với *hợp đồng chiến thuật* sync/async/consistency ở mục 4.)
+
+**7.2 Physical — Triển khai (nhiều-nhiều).** BC ⟷ **N container** ⟷ deployment node/zone. Cho phép một BC trải nhiều deployable và một deployable chứa nhiều BC. Mỗi hộp deployment là *node hạ tầng* hoặc *instance của một container đã định nghĩa* — không hộp "lửng".
+
+---
+
+## 8. Mệnh đề kiểm-chứng-được & Kịch bản
+
+### 8.1 Trường `verify:` (bắt buộc, nhất quán)
+Mọi **mệnh đề kiểm-chứng-được** — NFR, SLO, **kịch bản chất lượng**, **invariant**, **bảo đảm tương tác** — mang một trường **`verify:`** mô tả *cách kiểm*: `review` (người soát) · `test` (unit/contract/integration) · `monitor` (chỉ số/alert runtime) · `check` (kiểm tự động — chi tiết ngoài phạm vi chuẩn này). Con trỏ thuộc tài liệu; *phép kiểm* thực thi thì ngoài phạm vi (§0.2). Đây là sửa nhất quán: invariant (mục 7) và kịch bản chất lượng (mục 8) cùng loại artifact → cùng có `verify:`.
+
+### 8.2 Kịch bản vận hành (runtime)
+Cây chất lượng + kịch bản dạng *stimulus → response đo được*, nối về mục tiêu/NFR; mỗi kịch bản có `verify:`.
+
+### 8.3 Kịch bản thay đổi / tiến hóa (BẮT BUỘC — lý do tồn tại của N2)
+"Ổn định" chỉ có nghĩa *tương đối với một phân phối thay đổi kỳ vọng*. AD **phải khai các kịch bản thay đổi được dự đoán** — đây là thứ duy nhất cho phép phán xét ranh giới (BC/L1–L5) đã vẽ đúng chỗ chưa.
+
+| Trường | Ví dụ |
+| --- | --- |
+| Thay đổi dự kiến | "thay search engine", "thêm loại tenant X", "tách BC này làm đôi", "đổi cổng thanh toán" |
+| Mức tác động kỳ vọng | bao nhiêu BC/hợp đồng/ADR bị chạm |
+| Ranh giới hấp thụ | mục/ADR/ACL nào *được thiết kế để* cô lập thay đổi này |
+
+Không có kịch bản thay đổi thì L1–L5 trở thành giáo điều không kiểm chứng được.
+
+---
+
+## 9. ADR — format, phân cấp, lưu trữ, tradeoff
+
+- **Format:** Context → Decision → Status → Consequences (Nygard/MADR); trạng thái `Proposed → Accepted → Superseded by …`; **immutable**.
+- **File riêng, AD chỉ index.** ADR là **log bất biến tăng vô hạn** → nếu nhét nguyên văn vào AD sẽ phá N2 (lõi ổn định chứa thứ phình mãi). Bắt buộc: mỗi ADR **một file** (`ADR-NNNN-….md` / `ADR-<BC>-N-….md`); AD/Tech Spec chỉ **liệt kê index**.
+- **Phân cấp:** **ADR hệ thống** `ADR-NNNN` (liên-BC/cross-cutting, ở AD) vs **ADR context-local** `ADR-<BC>-N` (nội bộ BC, ở Tech Spec, tham chiếu ADR hệ thống). Không trộn dãy số.
+- **Sổ tradeoff:** concern xung đột nhau (security↔latency, cost↔availability). Mỗi ADR đánh đổi phải **liên kết tới các concern đối kháng** nó hi sinh (cạnh `trades-off` — §6), để lý lẽ tradeoff không bị mất.
+
+---
+
+## 10. Versioning — semver per-doc + lát cắt nhất quán
+
+- Mỗi tài liệu có **semver + changelog** (bump khi đổi nặng-kiến-trúc).
+- Hệ gồm **1 AD + N Tech Spec + nhiều ADR + OpenAPI/AsyncAPI**, version **độc lập** → tham chiếu chéo dễ **dangling**. Bắt buộc khái niệm **"lát cắt nhất quán"**: một **manifest / valid-as-of** ghi bộ phiên bản khớp nhau (AD vX ↔ TechSpec-A vY ↔ contract vZ…), để correspondence (§7) luôn trỏ tới phiên bản đúng.
+
+---
+
+## 11. Anti-patterns (về nội dung)
 
 | # | Anti-pattern | Vì sao sai |
 | --- | --- | --- |
-| A1 | Gõ tay schema/field/mã lỗi đầy đủ trong AD | Stale tức thì; thuộc OpenAPI/AsyncAPI |
-| A2 | Liệt kê tên RPC method / framework per-service ở AD như quyết định | Kéo AD xuống tầng dưới; indicative, dễ lật (L3) |
-| A3 | Lặp cùng một thông tin ở nhiều tài liệu | Lệch nhau khi đổi; vi phạm N3/N4 |
-| A4 | Nhồi thiết kế nội bộ (L3) của BC vào AD | Sai tầng; AD phình + team dẫm đè |
-| A5 | Trộn nhiều mức trừu tượng trong một sơ đồ/mục | Khó đọc; vi phạm N1 |
-| A6 | Bỏ trống mục mà không ghi "N/A — lý do" | Mất dấu vết quyết định bỏ qua |
-| A7 | Thông tin chưa chốt nhưng viết như đã chốt (không TBD) | Bịa cho "đủ"; vi phạm N5 |
-| A8 | ADR viết xong nhưng thiếu Status/Consequences | Không truy vết được vòng đời quyết định |
+| A1 | Gõ tay schema/field/mã lỗi đầy đủ trong AD | Stale tức thì; thuộc OpenAPI/AsyncAPI (W4) |
+| A2 | Liệt kê runtime/framework per-service ở AD như quyết định | Indicative, dễ lật (L3) |
+| A3 | Lặp cùng thông tin ở nhiều tài liệu | Lệch khi đổi (N3) |
+| A4 | Nhồi thiết kế nội bộ (L3) của BC vào AD | Sai tầng; AD phình + đội dẫm đè |
+| A5 | Trộn nhiều mức trừu tượng trong một sơ đồ | Khó đọc (N1/W3) |
+| A6 | Khung phẳng, không phân Lõi/Mở rộng | Vi phạm N2/N3 cấp meta; nặng → không viết hoặc rữa |
+| A7 | Truy vết vẽ như chuỗi 1:1 | Mất thực tế nhiều-nhiều (§6) |
+| A8 | Concern thu thập nhưng không view nào frame | Hổng adequacy 42010 (§6) |
+| A9 | Mệnh đề kiểm-chứng-được thiếu `verify:` | Đặc tả tách khỏi phép kiểm |
+| A10 | Prescribe ranh giới ổn định nhưng không khai kịch bản thay đổi | L1–L5 thành giáo điều (§8.3) |
+| A11 | Nhét nguyên văn ADR vào AD | Phá N2 (log phình mãi) (§9) |
+| A12 | Bảng correspondence ép BC ≅ deployable | Không biểu diễn BC-đa-deployable / monolith-đa-BC (§7) |
+| A13 | Bỏ trống mục không ghi "N/A — lý do" | Mất dấu vết quyết định bỏ qua |
 
 ---
 
-## 9. Checklist Definition-of-Done (cấu trúc & nội dung)
+## 12. Checklist Definition-of-Done
 
 | # | Hạng mục | ✓ |
 | --- | --- | --- |
-| 1 | AD đủ các mục 1–13 + Phụ lục, hoặc "N/A — lý do" | ☐ |
-| 2 | Mục tiêu/NFR **đo được**; cây chất lượng + kịch bản (mục 8) | ☐ |
-| 3 | View đa tầng + ghi chú grain (Context/Landscape/Container, Component khi cần) | ☐ |
-| 4 | Công nghệ phân loại binding vs indicative; runtime per-service KHÔNG ở AD (L3) | ☐ |
-| 5 | Bảng correspondence Landscape↔Container↔Deployment↔Tech Spec (mục 2.4) | ☐ |
-| 6 | Hợp đồng: AD chỉ trỏ OpenAPI/AsyncAPI; bảng bảo đảm tương tác (mục 5) | ☐ |
-| 7 | Mỗi BC có 1 Tech Spec đúng khuôn (§3); AD trỏ tới, không sao chép L3 | ☐ |
-| 8 | Tech Spec có khối "Ranh giới tầng" (AD giữ L2 / Tech Spec giữ L3) | ☐ |
-| 9 | ADR đúng format + phân cấp (hệ thống `ADR-NNNN` vs context-local `ADR-<BC>-N`) | ☐ |
-| 10 | Rủi ro & Nợ kỹ thuật (mục 12); mọi TBD có nơi theo dõi | ☐ |
-| 11 | Glossary có cột Bounded Context | ☐ |
-| 12 | Version + changelog + phê duyệt | ☐ |
+| 1 | Có đủ **AD-Lite (Lõi)**; mục Mở rộng đúng trigger hoặc "N/A — lý do" | ☐ |
+| 2 | Mục tiêu/NFR **đo được**; mỗi mệnh đề kiểm-chứng-được có **`verify:`** | ☐ |
+| 3 | **Concern coverage:** mọi concern (mục 1) được ≥1 view `frames` | ☐ |
+| 4 | View đa tầng + ghi chú grain (W5); một sơ đồ một grain (W3) | ☐ |
+| 5 | Công nghệ phân loại binding/indicative; runtime per-service KHÔNG ở AD; có trigger tái-phân-loại (L3) | ☐ |
+| 6 | Hợp đồng: AD trỏ OpenAPI/AsyncAPI; bảng bảo đảm tương tác (mục 4) | ☐ |
+| 7 | Correspondence **logical (Context Map + kiểu quan hệ)** và **physical (nhiều-nhiều)** tách bạch (§7) | ☐ |
+| 8 | Truy vết **đồ thị** có ID + ngữ nghĩa cạnh (§6) | ☐ |
+| 9 | **Kịch bản thay đổi/tiến hóa** đã khai (§8.3) | ☐ |
+| 10 | Mỗi BC có 1 Tech Spec đúng khuôn (§4) + khối "Ranh giới tầng"; AD trỏ tới, không sao chép L3 | ☐ |
+| 11 | ADR: file riêng + AD index; phân cấp hệ-thống/context-local; ADR tradeoff link concern đối kháng (§9) | ☐ |
+| 12 | Rủi ro & Nợ kỹ thuật (mục 12); mọi TBD có nơi theo dõi | ☐ |
+| 13 | Glossary có cột Bounded Context | ☐ |
+| 14 | Version + changelog + **manifest lát cắt nhất quán** (§10) + phê duyệt | ☐ |
 
 ---
 
@@ -167,14 +237,14 @@ Bảng thuật ngữ bắt buộc ở AD: ID · Thuật ngữ · Định nghĩa 
 | Constraints | constraint | 2 | — |
 | Context & scope | architecture view | 3 | L1 Context |
 | Solution strategy | architecture decision | 4 | — |
-| Structure views | viewpoint, view, model kind, legend | 5 | Landscape/Container/Component |
-| Runtime / data flows | view (behavioral) | 6 | Sequence |
-| Deployment | view (deployment) | 7 | Deployment (grain BC) |
-| Data/Security/Cross-cutting | aspect, perspective | 8 | — |
-| Quality | concern, aspect | 10 | Quality tree + scenarios |
-| Decisions (ADR) | architecture decision, rationale | 9 | — |
-| Risks & debt | concern | 11 | — |
+| Structure views (+ `frames`) | viewpoint, view, model kind, legend, **correspondence** | 5 | Landscape/Container/Component |
+| Luồng / hành vi | view (behavioral) | 6 | Sequence |
+| Triển khai | view (deployment) | 7 | Deployment (grain BC) |
+| Dữ liệu/Bảo mật | aspect, perspective | 8 | — |
+| Chất lượng + kịch bản (vận hành & thay đổi) | concern, aspect | 10 | Quality tree + scenarios |
+| Quyết định (ADR) | architecture decision, rationale | 9 | — |
+| Rủi ro & nợ | concern | 11 | — |
 | Glossary | — | 12 | — |
-| Correspondence/Traceability | correspondence, correspondence method | (xuyên suốt) | — |
+| Truy vết (đồ thị) + adequacy | correspondence, correspondence method | (xuyên suốt) | — |
 
-> **Bước kế tiếp (sau khi chuẩn này ổn):** áp **`STD-AD-AAC`** để biến phần biểu diễn thành code (một model nhiều view, validate/drift/fitness trong CI, model liên-bang). Chuẩn nội dung này là *đầu vào* cho chuẩn AaC: AaC chỉ đổi **cách biểu diễn & cưỡng chế**, không đổi **thông tin gì cần có**.
+> Chuẩn này dừng ở **nội dung & quy trình-người**. Việc *mã hóa bằng công cụ* và *cưỡng chế tự động* (giữ nhất quán/truy vết/không-drift ở quy mô — §0.3) là một lớp riêng, áp **sau** và **trên** chuẩn này; nó đổi *cách giữ cho đúng*, không đổi *thông tin gì cần đúng*.
