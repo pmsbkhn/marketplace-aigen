@@ -3,10 +3,11 @@
 
 | | |
 | --- | --- |
-| Mã | `STD-DESIGN-DOC-v1.2` |
+| Mã | `STD-DESIGN-DOC-v1.3` |
 | Trạng thái | Draft for review |
 | Phạm vi | AD/SAD/SDD (cấp hệ thống) + Tech Spec (cấp miền), Markdown · **áp dụng kể cả khi hệ chỉ có 1 BC** |
 | Neo chuẩn | ISO/IEC/IEEE 42010:2022 · arc42 · C4 · ADR (Nygard/MADR) · DDD · ASR/ATAM (SEI) |
+| Thay đổi v1.3 | Gỡ va chạm ký hiệu: nhãn bộ lọc §5.1 đổi `L1/L2/L4/L5` → **`F1–F4`** (hết lẫn với mức C4 `L1/L2/L3`). Thêm **W6 — sơ đồ-as-text + legend bắt buộc** (+ anti-pattern A19, DoD #6) đóng AD-element *legend* của 42010. |
 | Thay đổi v1.2 | **Chẻ đôi phạm vi thành Lớp A (Prose — viết & giữ tay) và Lớp B (Model Obligations — khai lúc tạo, duy trì khi có công cụ)** (§0.3), gỡ mâu thuẫn "metamodel khoác áo viết tay". Chuẩn hóa cho **1 BC** + khung liên-BC để chỗ sẵn (§2). Phân tầng Core/Extension **theo nguyên tắc + trigger đếm-được** (§3). Thêm **bộ lọc ASR** cho yêu cầu (§5). **Luật `verify:`**: khi nào `review` không đủ + giá trị `audit`; nêu rõ quan hệ field `verify:` (Lớp A) ↔ cạnh `verifies` (Lớp B) (§8.1). Kịch bản thay đổi thêm **likelihood × impact** (§8.3). Thêm **brownfield as-is↔to-be** (§8.4). **Luật ID** ổn định (§6). **Cadence tái-soát** in-scope (§10). DDD theo **trục** thay vì enum (§7.1). |
 
 ---
@@ -103,6 +104,7 @@ Có một **cửa sổ** giữa "hệ đủ lớn để giữ-graph-bằng-tay l
 - **W3 — Một sơ đồ một grain.**
 - **W4 — Hợp đồng nêu *đảm bảo*, trỏ đặc tả** (field đầy đủ ở OpenAPI/AsyncAPI).
 - **W5 — Ghi chú grain C4:** BC = hộp Landscape (≈L1) · service+datastore = L2 · component nội bộ = L3. "Bên trong BC" ≠ "L3".
+- **W6 — Sơ đồ-as-text + legend bắt buộc:** mọi view vẽ bằng **text-diagram** (Mermaid/PlantUML — diff/review được) hoặc ảnh nhúng **kèm nguồn tái tạo được** (không nhúng ảnh nhị phân không-nguồn). Mỗi view có **legend** phân biệt loại phần tử (service · datastore · external · boundary · node hạ tầng) — đóng AD-element *legend* của 42010.
 
 ---
 
@@ -126,7 +128,7 @@ Có một **cửa sổ** giữa "hệ đủ lớn để giữ-graph-bằng-tay l
 
 ## 5. Bộ lọc nội dung (3 chiều: chi tiết · công nghệ · YÊU CẦU)
 
-**5.1 Chi tiết hiện thực (đặt ở đâu):** L1 Tier Test · L2 Dependency Test · L4 field-mang-sức-nặng · L5 TBD tường minh. AD dừng ở L2; L3 → Tech Spec.
+**5.1 Chi tiết hiện thực (đặt ở đâu):** F1 Tier Test · F2 Dependency Test · F3 field-mang-sức-nặng · F4 TBD tường minh. _(Nhãn lọc dùng tiền tố `F#` để **không** lẫn với mức C4 `L1/L2/L3`.)_ AD dừng ở C4 **L2**; **L3** → Tech Spec.
 
 **5.2 Công nghệ (binding vs indicative + vòng đời):** vào AD chỉ khi **load-bearing**; runtime/framework per-service là indicative → Tech Spec. **Vòng đời:** indicative tích đủ kẻ phụ thuộc (≥k context) → **trigger tái-phân-loại** → viết ADR nâng cấp (chống ossify im lặng).
 
@@ -248,6 +250,7 @@ Bảng ở AD: ID · Thuật ngữ · Định nghĩa thống nhất · **Bounded
 | A16 | **Bỏ as-is↔to-be** cho hệ đang di trú | mù brownfield (§8.4) |
 | A17 | Ép cạnh Context Map một nhãn DDD đơn | tranh luận taxonomy vô ích (§7.1) |
 | A18 | Bỏ trống mục không "N/A — lý do" | mất dấu vết quyết định bỏ qua |
+| A19 | **View thiếu legend / nhúng ảnh không-nguồn** | không đọc được loại phần tử; ảnh stale, không diff (W6) |
 
 ---
 
@@ -262,7 +265,7 @@ Bảng ở AD: ID · Thuật ngữ · Định nghĩa thống nhất · **Bounded
 | 3 | NFR đo được **và** qua **bộ lọc ASR** (§5.3) | ☐ |
 | 4 | Mệnh đề kiểm-chứng-được có `verify:`; mệnh đề trọng yếu **không** chỉ `review` (§8.1) | ☐ |
 | 5 | Kịch bản thay đổi có **khả-năng × tác-động** (§8.3); as-is↔to-be nếu brownfield (§8.4) | ☐ |
-| 6 | Binding/indicative + trigger tái-phân-loại (5.2); grain note (W5) | ☐ |
+| 6 | Binding/indicative + trigger tái-phân-loại (5.2); grain note (W5); **legend + sơ đồ-as-text (W6)** | ☐ |
 | 7 | Hợp đồng trỏ OpenAPI/AsyncAPI + bảng bảo đảm tương tác (mục 5) | ☐ |
 | 8 | Mỗi BC 1 Tech Spec đúng khuôn + khối "Ranh giới tầng"; AD không sao chép L3 | ☐ |
 | 9 | ADR file riêng + index; phân cấp; tradeoff link concern đối kháng (§9) | ☐ |
