@@ -2,9 +2,9 @@
 
 | Thông tin tài liệu | Giá trị |
 | --- | --- |
-| Mã tài liệu | `AD-MKTPLACE-AIGEN-v1.0` |
+| Mã tài liệu | `AD-MKTPLACE-AIGEN-v1.1` |
 | Loại | **Architecture Document (AD)** — cấp hệ thống (**1 file / hệ thống**) |
-| Phiên bản | `1.0.0` |
+| Phiên bản | `1.1.0` |
 | Trạng thái | ☐ Draft for review |
 | Ngày tạo | 2026-06-22 |
 | Cập nhật lần cuối | 2026-06-22 |
@@ -20,6 +20,7 @@
 | Phiên bản | Ngày | Tác giả | Mô tả thay đổi | Người duyệt |
 | --- | --- | --- | --- | --- |
 | 1.0.0 | 2026-06-22 | [Tác giả] | Tạo mới theo `STD-DOC-v1.11`; template đầu mục theo SAD | [Duyệt] |
+| 1.1.0 | 2026-06-22 | [Tác giả] | Bỏ §3 "Các thành phần" (trùng bảng BC §2.2 — capability gom về §2.2; con trỏ Tech Spec ở Phụ lục A.4; Edge/Gateway nêu trong §2.2). Bỏ §6.2 ERD & §6.3 Schema (header rỗng — bất biến no-FK gộp vào §6.1, ERD/schema → Tech Spec). Đánh số lại §3–§10 cho liền mạch. | [Duyệt] |
 
 > **Mô hình tài liệu (R-0 của `STD-DOC-v1.11`):** hệ thống có **đúng 01 AD này** + **01 Tech Spec / bounded context (BC)**, **không phụ thuộc số lượng BC**. AD giữ thứ ổn định (ranh giới giữa BC, liên kết, quyết định cấp hệ thống); chi tiết hiện thực (schema cột, field/mã lỗi, framework từng BC) **đẩy xuống** Tech Spec/contract. Bảng ánh xạ AD ↔ Tech Spec ở **Phụ lục A**.
 
@@ -136,7 +137,7 @@ flowchart TD
 
 > _Quy tắc (R-A3 / R-C1):_ giá trị cấu hình cụ thể (TTL, sizing, threshold, secret) → Tech Spec/config/Vault, **không** ở AD.
 >
-> ⚠️ **Open item (TBD):** IAM policy chi tiết cho S3 result bucket (chứng từ đối soát) — nguyên tắc đã chốt (write-once, deny overwrite/delete), policy literal chờ ADR riêng. Xem §6.4.3, §7.3.
+> ⚠️ **Open item (TBD):** IAM policy chi tiết cho S3 result bucket (chứng từ đối soát) — nguyên tắc đã chốt (write-once, deny overwrite/delete), policy literal chờ ADR riêng. Xem §5.2.3, §6.3.
 
 # 2. KIẾN TRÚC TỔNG THỂ
 
@@ -162,7 +163,7 @@ flowchart TD
 
 ## 2.2 Sơ đồ kiến trúc cấp cao (C4 — mức BC, BC là hộp đục)
 
-> _Quy tắc (R-0 + R-D2 + R-D5 + R-D6 + R-C9):_ mỗi **BC là một hộp đục** trong **vùng bao ranh giới hệ thống** — **không** vẽ ruột (service/datastore/framework); decompose nội bộ là L3 → Tech Spec của team sở hữu. Sơ đồ chỉ thể hiện **quan hệ giữa BC + hợp đồng/đảm bảo trên mỗi cạnh** (ý định + protocol + sync/async; **cấm** tên RPC method — thuộc contract §5). Quyền-sở-hữu-datastore **không** ở đây → §6 (sở hữu logic) & §2.4 (deployment, dạng rule). View **không phình** theo số BC: thêm BC = thêm một hộp.
+> _Quy tắc (R-0 + R-D2 + R-D5 + R-D6 + R-C9):_ mỗi **BC là một hộp đục** trong **vùng bao ranh giới hệ thống** — **không** vẽ ruột (service/datastore/framework); decompose nội bộ là L3 → Tech Spec của team sở hữu. Sơ đồ chỉ thể hiện **quan hệ giữa BC + hợp đồng/đảm bảo trên mỗi cạnh** (ý định + protocol + sync/async; **cấm** tên RPC method — thuộc contract §4). Quyền-sở-hữu-datastore **không** ở đây → §5 (sở hữu logic) & §2.4 (deployment, dạng rule). View **không phình** theo số BC: thêm BC = thêm một hộp.
 
 ```mermaid
 flowchart TB
@@ -209,7 +210,7 @@ flowchart TB
 
 **Legend:** ▢ vùng bao = ranh giới hệ thống · 🟦 Bounded Context (hộp đục) · ▭ API Gateway (edge/PEP) · 🟨 hệ ngoài. **Nét liền** = đồng bộ (sync, gRPC/HTTPS); **nét đứt** = event bất đồng bộ (Published Language). Nhãn cạnh = *ý định · protocol · đảm bảo*.
 
-> **Công nghệ binding (ràng buộc kiến trúc — R-C9/R-C11, ghi `năng lực (sản phẩm)`):** **event bus / async (Kafka)** là kênh của mọi cạnh nét đứt (xem §2.1.1 & §2.4). Các hạ tầng binding khác — **relational store per-context (PostgreSQL)**, **immutable doc store / WORM (S3 Object Lock)**, **search index (Elasticsearch)**, **cache & phiên ephemeral (Redis)** — thể hiện ở **§2.4 Deployment** (rule hạ tầng) & **§6** (sở hữu logic), không vẽ trong sơ đồ này. Framework/runtime *từng BC* là **indicative** → Tech Spec, không nêu ở AD.
+> **Công nghệ binding (ràng buộc kiến trúc — R-C9/R-C11, ghi `năng lực (sản phẩm)`):** **event bus / async (Kafka)** là kênh của mọi cạnh nét đứt (xem §2.1.1 & §2.4). Các hạ tầng binding khác — **relational store per-context (PostgreSQL)**, **immutable doc store / WORM (S3 Object Lock)**, **search index (Elasticsearch)**, **cache & phiên ephemeral (Redis)** — thể hiện ở **§2.4 Deployment** (rule hạ tầng) & **§5** (sở hữu logic), không vẽ trong sơ đồ này. Framework/runtime *từng BC* là **indicative** → Tech Spec, không nêu ở AD.
 
 | BC (hộp) | Trách nhiệm / capability | Bề mặt giao tiếp (cung cấp · tiêu thụ) |
 | --- | --- | --- |
@@ -221,9 +222,11 @@ flowchart TB
 | Payment | Escrow, đối soát, payout, chứng từ WORM | Cung cấp: init escrow (sync), webhook; `PaymentReceived` (event) · Tiêu thụ: `OrderCompleted` (event) |
 | Notification | Thông báo đa kênh (email/SMS) | Tiêu thụ: `PaymentReceived`, `OrderCompleted` & trạng thái đơn (event) |
 
+> **Edge — API Gateway / BFF (hạ tầng, không phải BC):** định tuyến · verify JWT · rate-limit & WAF · gắn tenant scope · TLS termination. Là **PEP biên** (cơ chế ở §6), không phải một bounded context.
+
 ## 2.3 DDD Context Map _(optional — áp dụng vì dự án dùng DDD)_
 
-> _Quy tắc (§7 của `STD-DOC-v1.11`):_ mục này **optional**; bắt buộc nếu team dùng DDD, bỏ được nếu không (chiều phụ thuộc đã có ở bảng §2.2). Nó thể hiện **hai lớp**: **(a) quan hệ cộng tác giữa các team sở hữu BC** (Conway's law — Customer–Supplier, Partnership, Conformist, Shared Kernel) và **(b) ngữ nghĩa tích hợp dữ liệu tại biên** (ACL, OHS, Published Language). §2.2 cho *topology + hợp đồng*; §2.3 cho *quan hệ đội + kiểu dịch dữ liệu*. U = upstream, D = downstream.
+> _Quy tắc (§6 của `STD-DOC-v1.11`):_ mục này **optional**; bắt buộc nếu team dùng DDD, bỏ được nếu không (chiều phụ thuộc đã có ở bảng §2.2). Nó thể hiện **hai lớp**: **(a) quan hệ cộng tác giữa các team sở hữu BC** (Conway's law — Customer–Supplier, Partnership, Conformist, Shared Kernel) và **(b) ngữ nghĩa tích hợp dữ liệu tại biên** (ACL, OHS, Published Language). §2.2 cho *topology + hợp đồng*; §2.3 cho *quan hệ đội + kiểu dịch dữ liệu*. U = upstream, D = downstream.
 
 ```mermaid
 flowchart LR
@@ -349,55 +352,13 @@ flowchart TB
 
 Rolling update mặc định; **Canary** cho Checkout/Payment (rủi ro cao); Feature flag cho khuyến mãi; Blue/Green khi đổi schema breaking. (YAML/IaC literal, số sizing → Tech Spec/IaC — R-C1.)
 
-# 3. CÁC THÀNH PHẦN HỆ THỐNG
+# 3. LUỒNG DỮ LIỆU
 
-## 3.1 Tổng quan các thành phần
+> _Quy tắc (R-A7 / R-D7 / R-D9):_ AD chỉ giữ kịch bản **xuyên nhiều BC**; flow nội bộ một BC → Tech Spec. **Sequence** là mặc định cho thứ tự thời gian — flow rất đơn giản thì mô tả **prose** (vd §3.1.2, §3.1.3), không ép vẽ. **DFD** (§3.2) bổ trợ khi cần thấy *dữ liệu chảy đi đâu*, ở **mức loại dữ liệu** (không field/schema). Pseudocode/log không thuộc AD.
 
-> _Quy tắc (R-A19 — phép thử phụ thuộc):_ AD mô tả mỗi BC ở mức **trách nhiệm & bề mặt** (cái bên ngoài phụ thuộc vào). Chi tiết bên trong BC → Tech Spec.
+## 3.1 Luồng chính (Happy Path)
 
-| # | BC / Component | Loại | Trách nhiệm chính (capability) |
-| --- | --- | --- | --- |
-| 0 | API Gateway/BFF (Kong) | Infra | Định tuyến; verify JWT; rate limit & WAF; gắn tenant scope; TLS termination |
-| 1 | Identity | BC | Vòng đời tài khoản; cấp & xác thực JWT (RS256, OIDC); RBAC 3 vai trò; MFA Admin & Merchant rút tiền |
-| 2 | Catalog | BC | Danh mục/biến thể/SKU (source of truth); kiểm duyệt; search ES; phát `ProductCreated` |
-| 3 | Inventory | BC | Tồn kho theo SKU; reservation; trừ kho vĩnh viễn khi `OrderCompleted`; release khi compensation |
-| 4 | Checkout | BC | **Orchestrator**: tổng hợp giá, reserve kho, tách đơn theo Merchant, tạo pending order, init escrow; saga compensation |
-| 5 | Order (OMS) | BC | Vòng đời đơn qua state machine; phát `OrderCompleted`; snapshot giá tại thời điểm đặt |
-| 6 | Payment | BC | Giao dịch cổng ngoài; **escrow**; phí/hoa hồng; payout; chứng từ đối soát bất biến (WORM); verify webhook |
-| 7 | Notification | BC | Lắng nghe event; thông báo đa kênh (email/SMS); fallback kênh |
-
-## 3.2 Mô tả chi tiết từng thành phần
-
-> Mỗi BC mô tả ở mức bề mặt + trỏ Tech Spec (R-C1/R-C6). Đầy đủ 7 BC → 7 Tech Spec (Phụ lục A).
-
-### 3.2.1 Checkout BC (Orchestrator)
-
-| Thuộc tính | Giá trị |
-| --- | --- |
-| Loại / Owner | BC / Checkout team _(framework/runtime: indicative → Tech Spec)_ |
-| Ranh giới tin cậy | Nội bộ; điều phối đồng bộ tới Catalog/Inventory/Order/Payment (gRPC mTLS) |
-| Trạng thái | Gần như stateless; phiên checkout tạm ở Redis (TTL ngắn) |
-| Capability | Tổng hợp giá, reserve kho, tách đơn theo Merchant, tạo pending order, init escrow; compensation khi một bước lỗi |
-| Bề mặt (interface) | Vào: `POST /v1/checkout`. Ra: lấy giá / giữ kho / tạo đơn / init escrow (xem §5) |
-| Thiết kế chi tiết | [techspec/Checkout.md](techspec/Checkout.md) |
-
-### 3.2.2 Payment BC (Escrow & Settlement)
-
-| Thuộc tính | Giá trị |
-| --- | --- |
-| Loại / Owner | BC / Payment team _(framework/runtime: indicative → Tech Spec)_ |
-| Ranh giới tin cậy | Outbound → cổng thanh toán & ngân hàng; inbound webhook; ghi chứng từ bất biến lên S3 (WORM) |
-| Capability | Giao dịch cổng ngoài, escrow (giữ tiền), phí/hoa hồng, payout; chứng từ đối soát (WORM) |
-| Bề mặt (interface) | Vào: init escrow (gRPC), webhook thanh toán. Phát: `PaymentReceived` |
-| Thiết kế chi tiết | `techspec/Payment.md` (TODO) |
-
-# 4. LUỒNG DỮ LIỆU
-
-> _Quy tắc (R-A7 / R-D7 / R-D9):_ AD chỉ giữ kịch bản **xuyên nhiều BC**; flow nội bộ một BC → Tech Spec. **Sequence** là mặc định cho thứ tự thời gian — flow rất đơn giản thì mô tả **prose** (vd §4.1.2, §4.1.3), không ép vẽ. **DFD** (§4.2) bổ trợ khi cần thấy *dữ liệu chảy đi đâu*, ở **mức loại dữ liệu** (không field/schema). Pseudocode/log không thuộc AD.
-
-## 4.1 Luồng chính (Happy Path)
-
-### 4.1.1 Checkout & tách đơn (Orchestration)
+### 3.1.1 Checkout & tách đơn (Orchestration)
 
 ```mermaid
 sequenceDiagram
@@ -424,17 +385,17 @@ sequenceDiagram
     end
 ```
 
-### 4.1.2 Thanh toán → cập nhật đơn
+### 3.1.2 Thanh toán → cập nhật đơn
 
 Cổng thanh toán → Payment webhook (verify chữ ký) → Payment giữ tiền (escrow) → phát `PaymentReceived` → Order chuyển "To Ship" → Notification báo Merchant.
 
-### 4.1.3 Hoàn tất & đối soát (Settlement)
+### 3.1.3 Hoàn tất & đối soát (Settlement)
 
 Buyer xác nhận nhận hàng → Order "Completed" → phát `OrderCompleted` → Inventory trừ kho vĩnh viễn; Payment tính hoa hồng → release escrow → payout về ngân hàng Merchant → sinh chứng từ đối soát (ghi **bất biến** lên S3 WORM).
 
-## 4.2 Data Flow Diagram (mức loại dữ liệu)
+## 3.2 Data Flow Diagram (mức loại dữ liệu)
 
-> _Quy tắc (D.4 / R-D9–R-D11):_ DFD ở **mức loại dữ liệu** — nhãn flow là *loại dữ liệu/ý định*, **không** field/cột/DDL. **Process** = BC (đã định nghĩa §2.2); **datastore** = store BC sở hữu (khớp §6). **Legend:** 🟨 external entity · 🟦 process (BC) · 🟪 datastore. Flow **đánh số** theo trình tự dữ liệu di chuyển.
+> _Quy tắc (D.4 / R-D9–R-D11):_ DFD ở **mức loại dữ liệu** — nhãn flow là *loại dữ liệu/ý định*, **không** field/cột/DDL. **Process** = BC (đã định nghĩa §2.2); **datastore** = store BC sở hữu (khớp §5). **Legend:** 🟨 external entity · 🟦 process (BC) · 🟪 datastore. Flow **đánh số** theo trình tự dữ liệu di chuyển.
 
 ```mermaid
 flowchart TD
@@ -474,7 +435,7 @@ flowchart TD
     P_Order -->|"17. trigger settlement"| P_Payment
 ```
 
-## 4.3 Luồng bất đồng bộ (Event-Driven)
+## 3.3 Luồng bất đồng bộ (Event-Driven)
 
 > _Quy tắc (R-C3):_ event là **Published Language** — hợp đồng công khai (AsyncAPI), không phải phụ phẩm publisher. Schema field đầy đủ → contract artifact.
 
@@ -484,15 +445,15 @@ flowchart TD
 | PaymentReceived | Payment | Order, Notification | at-least-once · per orderId · consumer idempotent |
 | OrderCompleted | Order | Inventory, Payment | at-least-once · per orderId · consumer idempotent |
 
-# 5. GIAO DIỆN HỆ THỐNG
+# 4. GIAO DIỆN HỆ THỐNG
 
 > _Quy tắc (R-A15 / R-C6):_ AD nêu interface ở mức **capability + đảm bảo**; đặc tả đầy đủ field/method/mã lỗi → **OpenAPI/proto** (sync) và **AsyncAPI + schema registry** (async). AD **trỏ tới**, không sao chép.
 >
-> _Quy tắc (R-D8 — không sơ đồ trùng):_ mục này dùng **bảng** (inventory capability + bảng đảm bảo §5.1.4), **không** vẽ sơ đồ trust-boundary/PEP — bức tranh biên & cơ chế enforce thuộc **§7 Kiến trúc bảo mật** (xem sơ đồ ZTA ở đó). Bảng §5.1.2 chỉ *phân loại* interface theo biên và trỏ §7.
+> _Quy tắc (R-D8 — không sơ đồ trùng):_ mục này dùng **bảng** (inventory capability + bảng đảm bảo §4.1.4), **không** vẽ sơ đồ trust-boundary/PEP — bức tranh biên & cơ chế enforce thuộc **§6 Kiến trúc bảo mật** (xem sơ đồ ZTA ở đó). Bảng §4.1.2 chỉ *phân loại* interface theo biên và trỏ §6.
 
-## 5.1 Internal APIs
+## 4.1 Internal APIs
 
-### 5.1.1 Quy ước chung
+### 4.1.1 Quy ước chung
 
 | Quy ước | Áp dụng |
 | --- | --- |
@@ -503,7 +464,7 @@ flowchart TD
 | Error format | `{error:{code, message, details[]}}` |
 | ID / Time | UUID v4 · ISO 8601 UTC |
 
-### 5.1.2 Phân loại interface theo ranh giới tin cậy
+### 4.1.2 Phân loại interface theo ranh giới tin cậy
 
 | Nhóm | Ranh giới | Cơ chế bảo vệ |
 | --- | --- | --- |
@@ -512,7 +473,7 @@ flowchart TD
 | Outbound (PG/Bank) | Nội bộ → ngoài | HMAC, timeout, retry, secret ở Vault, egress hạn chế |
 | Inbound webhook | Ngoài → nội bộ | Verify chữ ký, allowlist IP, idempotency |
 
-### 5.1.3 Danh sách interface quan trọng (mức capability)
+### 4.1.3 Danh sách interface quan trọng (mức capability)
 
 > _Quy tắc (R-B10/R-D2):_ liệt kê ở mức **capability**, không phải tên method literal. Tên proto/route đầy đủ → contract artifact.
 
@@ -524,7 +485,7 @@ flowchart TD
 | 4 | gRPC | Khởi tạo escrow | Payment → Checkout | mTLS |
 | 5 | REST | Webhook thanh toán | Cổng thanh toán → Payment | Chữ ký + idempotency |
 
-### 5.1.4 Bảng "đảm bảo tương tác" (R-C7)
+### 4.1.4 Bảng "đảm bảo tương tác" (R-C7)
 
 | Interface/Event | sync/async | consistency | idempotency | ordering | delivery | hành vi lỗi / suy giảm |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -534,7 +495,7 @@ flowchart TD
 | Webhook thanh toán | async (inbound) | eventual | có (verify + dedupe) | n/a | at-least-once | retry; chống replay |
 | Event (Kafka) | async | eventual | consumer idempotent | per key | at-least-once | retry + DLQ |
 
-## 5.2 External Integration Points
+## 4.2 External Integration Points
 
 | Hệ thống | Loại | Ranh giới | Dữ liệu qua biên | Resilience | Compliance |
 | --- | --- | --- | --- | --- | --- |
@@ -543,11 +504,11 @@ flowchart TD
 | Đơn vị vận chuyển | Logistics | Outbound | Địa chỉ (PII) | Retry → queue | Subprocessor, DPA |
 | Email/SMS | Notification | Outbound | SĐT/email (PII) | Fallback kênh khác | Subprocessor |
 
-# 6. KIẾN TRÚC DỮ LIỆU
+# 5. KIẾN TRÚC DỮ LIỆU
 
 > _Quy tắc (R-A9 / R-C1):_ AD nêu **quyền sở hữu, ranh giới, phân loại, bất biến**. Schema cột / ERD chi tiết / DDL → Tech Spec từng BC.
 
-## 6.1 Tổng quan kiến trúc dữ liệu
+## 5.1 Tổng quan kiến trúc dữ liệu
 
 ```mermaid
 flowchart TB
@@ -591,25 +552,19 @@ flowchart TB
 | Payment | Payment/Escrow/Settlement; chứng từ đối soát | relational (PostgreSQL) + immutable doc store / WORM (S3 Object Lock) | ACID + **chứng từ bất biến** |
 | Checkout | Phiên checkout (ephemeral) | cache & phiên ephemeral (Redis) | tốc độ, TTL ngắn, không bền |
 
-## 6.2 Entity Relationship Diagram (ERD)
+> **Bất biến dữ liệu (cấp AD):** **không FK vật lý xuyên BC** — tham chiếu chéo (vd `order_id` ở Payment, `product_id` ở Order) chỉ là *reference logic* (xem sơ đồ §5.1). **ERD / schema cột / DDL chi tiết → Tech Spec (mục Interfaces & data) của từng BC**, không ở AD (R-A9 / R-C1).
 
-**Mỗi BC có ERD riêng**, **không FK vật lý xuyên BC**. Tham chiếu xuyên BC (vd `order_id` trong dữ liệu Payment, `product_id` trong dữ liệu Order) là _reference logic_. _Quy tắc (R-A9/R-C1):_ ERD cột chi tiết → **Tech Spec** từng BC, không ở AD.
+## 5.2 Chiến lược quản lý dữ liệu
 
-## 6.3 Định nghĩa Schema chính
-
-Tổ chức theo BC. Schema cột chi tiết → Tech Spec tương ứng (vd Checkout chỉ có Redis key schema → [techspec/Checkout.md §4.3](techspec/Checkout.md)).
-
-## 6.4 Chiến lược quản lý dữ liệu
-
-### 6.4.1 Migration
+### 5.2.1 Migration
 
 Flyway; backward-compatible ≥ 1 deploy cycle.
 
-### 6.4.2 Backup
+### 5.2.2 Backup
 
 DB chính daily full + hourly incremental (Payment tier-1: RPO < 5 phút).
 
-### 6.4.3 Data Lifecycle & phân loại
+### 5.2.3 Data Lifecycle & phân loại
 
 | Loại dữ liệu | Retention | Khi hết hạn | Cơ sở |
 | --- | --- | --- | --- |
@@ -618,9 +573,9 @@ DB chính daily full + hourly incremental (Payment tier-1: RPO < 5 phút).
 | Chứng từ đối soát (S3) | 10 năm | Immutable (WORM) | Compliance tài chính |
 | Audit log | 5 năm | Immutable (Object Lock) | Compliance |
 
-> ⚠️ **TBD (R-A22):** IAM policy chi tiết cho S3 result bucket — nguyên tắc: write-once, deny overwrite/delete kể cả owner; policy literal chờ ADR riêng. Xem §7.3.
+> ⚠️ **TBD (R-A22):** IAM policy chi tiết cho S3 result bucket — nguyên tắc: write-once, deny overwrite/delete kể cả owner; policy literal chờ ADR riêng. Xem §6.3.
 
-# 7. KIẾN TRÚC BẢO MẬT
+# 6. KIẾN TRÚC BẢO MẬT
 
 > Hướng theo Zero-Trust (NIST SP 800-207). _Quy tắc (R-A10):_ AD nêu **mô hình** (trust boundary, authn/authz, mã hóa, ZTA target vs current); IAM policy literal, rule cụ thể → Tech Spec/policy.
 
@@ -673,16 +628,16 @@ flowchart TB
 >
 > Ví dụ cân nhắc gom nhóm cho Marketplace-AiGen: cụm luồng tiền **Checkout + Order + Payment** rất chatty trong saga — có thể là một segment nội bộ (vẫn giữ PEP biên cụm + mTLS), đánh đổi blast radius. _Hiện tại giữ per-BC để cô lập Payment (Tier-1, tiền thật)._
 
-## 7.1 Xác thực (Authentication)
+## 6.1 Xác thực (Authentication)
 
 * **Người dùng:** OIDC + JWT (RS256); IdP phát token; access TTL ngắn, refresh dài; MFA bắt buộc cho Admin & Merchant rút tiền; SSO Merchant tùy chọn.
-* **Workload:** SPIFFE/SPIRE cấp **SVID** cho mỗi workload; là nền tảng cho mTLS (§7.3) và authz service-to-service. Không service nào được tin chỉ vì nằm trong VPC.
+* **Workload:** SPIFFE/SPIRE cấp **SVID** cho mỗi workload; là nền tảng cho mTLS (§6.3) và authz service-to-service. Không service nào được tin chỉ vì nằm trong VPC.
 
-## 7.2 Phân quyền (Authorization)
+## 6.2 Phân quyền (Authorization)
 
 Mô hình **PDP/PEP**: quyết định tập trung ở **PDP** (policy-as-code), thực thi ở **PEP** đặt **mọi ranh giới** — Gateway (request người dùng) **và cổng vào mỗi BC** (gọi service-to-service, gắn với workload), **per-request** + **deny-by-default**. Authz s2s thực thi **PoLP**: caller chỉ gọi đúng capability được cấp (vd Checkout chỉ được init escrow ở Payment, không gọi op khác). Nội dung policy = **RBAC + tenant isolation**: mọi truy vấn dữ liệu Merchant gắn `merchant_id`; Merchant A **không** truy cập dữ liệu Merchant B.
 
-### 7.2.1 Role & Permission Matrix
+### 6.2.1 Role & Permission Matrix
 
 | Resource / Action | Admin | Merchant | Buyer |
 | --- | --- | --- | --- |
@@ -692,13 +647,13 @@ Mô hình **PDP/PEP**: quyết định tập trung ở **PDP** (policy-as-code),
 | Payout/đối soát | ✔ | ✔ xem của mình | ✘ |
 | Chứng từ đối soát (S3) | đọc | đọc của mình | ✘ |
 
-## 7.3 Mã hóa (Encryption)
+## 6.3 Mã hóa (Encryption)
 
 * **In-transit:** TLS 1.3 ở biên ngoài; mTLS giữa mọi workload nội bộ — chứng chỉ là SVID do SPIRE/CA cấp & xoay tự động.
 * **At-rest:** AES-256 (KMS/Vault); STK ngân hàng & PII mã hóa field-level.
 * **Chứng từ đối soát:** S3 + Object Lock (WORM) — _quyết định: write-once, deny overwrite/override_; IAM policy chi tiết **TBD** (cần ADR, kèm legal-hold & retention).
 
-## 7.4 Bảo mật API (PEP tại từng ranh giới)
+## 6.4 Bảo mật API (PEP tại từng ranh giới)
 
 | Ranh giới | PEP | Enforce |
 | --- | --- | --- |
@@ -709,11 +664,11 @@ Mô hình **PDP/PEP**: quyết định tập trung ở **PDP** (policy-as-code),
 
 Bổ sung: CORS allowlist · CSRF cho state-changing · validate server-side (không tin client).
 
-## 7.5 Kiểm tra & Tuân thủ bảo mật
+## 6.5 Kiểm tra & Tuân thủ bảo mật
 
 > _Quy tắc (PHẦN F của `STD-DOC-v1.11`):_ AD ghi **invariant** + điểm cần **người review (gate)**. Cơ chế **thực thi tự động** (fitness function / policy-as-code trong CI) thuộc phạm vi **AaC** — tách riêng.
 
-**Invariant bảo mật cấp hệ thống** (theo mô hình microsegmentation §7, mặc định 1 BC = 1 segment; enforcement tự động → AaC, sau):
+**Invariant bảo mật cấp hệ thống** (theo mô hình microsegmentation §6, mặc định 1 BC = 1 segment; enforcement tự động → AaC, sau):
 
 | Invariant | Ghi chú |
 | --- | --- |
@@ -731,9 +686,9 @@ Bổ sung: CORS allowlist · CSRF cho state-changing · validate server-side (kh
 
 > ⚠️ **Target vs current (R-A10):** ZTA là hành trình nhiều giai đoạn. *Hiện trạng:* mTLS qua mesh + PEP tại Gateway đã có. *Đang triển khai:* PDP tập trung + per-request authz ở sidecar (GĐ2); SPIRE federation (GĐ3). Mỗi cột mốc ZTA = 1 thay đổi kiến trúc → 1 ADR riêng. Sơ đồ trên là kiến trúc **mục tiêu**.
 
-# 8. HIỆU NĂNG & KHẢ NĂNG MỞ RỘNG
+# 7. HIỆU NĂNG & KHẢ NĂNG MỞ RỘNG
 
-## 8.1 Yêu cầu hiệu năng (quality requirements)
+## 7.1 Yêu cầu hiệu năng (quality requirements)
 
 | Metric | Target | Điều kiện |
 | --- | --- | --- |
@@ -744,31 +699,31 @@ Bổ sung: CORS allowlist · CSRF cho state-changing · validate server-side (kh
 
 **Quality scenario (mẫu):** _Cao điểm flash sale 3.000 RPS_ → checkout P99 vẫn < 800 ms nhờ HPA + Redis cache giá + partition Kafka theo `merchant_id`. _Escrow lệch_ → alert P1 + freeze payout (đảm bảo M2: 0 lệch tiền).
 
-## 8.2 SLA
+## 7.2 SLA
 
 Payment/Order 99.95% · Checkout 99.9% · Catalog/Search 99.5%.
 
-## 8.3 Capacity Planning
+## 7.3 Capacity Planning
 
 Ước tính từ DAU × đơn/user; Payment & Order là tier-1. Headroom 3–5x.
 
-## 8.4 Chiến lược Scaling
+## 7.4 Chiến lược Scaling
 
-### 8.4.1 Horizontal
+### 7.4.1 Horizontal
 
 K8s HPA (CPU>70%/RPS); stateless services; read replica cho Catalog; partition Kafka theo `merchant_id`.
 
-### 8.4.2 Caching
+### 7.4.2 Caching
 
 CDN (ảnh/sản phẩm) · Redis (phiên checkout, giá) · local (feature flags).
 
-# 9. XỬ LÝ LỖI & KHẢ NĂNG PHỤC HỒI
+# 8. XỬ LÝ LỖI & KHẢ NĂNG PHỤC HỒI
 
-## 9.1 Phân loại và xử lý lỗi
+## 8.1 Phân loại và xử lý lỗi
 
 Chuẩn HTTP (400/401/403/404/409/422/429/500/503); error model `{error:{code,message,details[]}}` — hành động chi tiết ở runbook (ngoài AD).
 
-## 9.2 Resilience Patterns
+## 8.2 Resilience Patterns
 
 * **Saga + compensation** (Checkout): reserve → create order → init escrow; bước sau lỗi → release reservation + hủy pending order (ngược thứ tự).
 * **Idempotency (bắt buộc):** webhook thanh toán, payout, escrow.
@@ -776,9 +731,9 @@ Chuẩn HTTP (400/401/403/404/409/422/429/500/503); error model `{error:{code,me
 
 > **Invariant cấp hệ thống:** không bao giờ để **reservation/pending order mồ côi** sau khi saga checkout thất bại. (Enforcement tự động → AaC.)
 
-## 9.3 Disaster Recovery (DR)
+## 8.3 Disaster Recovery (DR)
 
-### 9.3.1 RTO / RPO
+### 8.3.1 RTO / RPO
 
 | Tier | RTO | RPO | Gồm |
 | --- | --- | --- | --- |
@@ -786,25 +741,25 @@ Chuẩn HTTP (400/401/403/404/409/422/429/500/503); error model `{error:{code,me
 | 2 Business | < 4h | < 1h | Checkout, Inventory |
 | 3 Important | < 24h | < 4h | Catalog, Notification |
 
-### 9.3.2 Kế hoạch DR
+### 8.3.2 Kế hoạch DR
 
 Failover multi-AZ; restore từ backup; chứng từ S3 WORM cross-region replication; smoke test luồng tiền trước khi thông báo phục hồi; post-mortem trong 48h.
 
-# 10. QUAN SÁT & GIÁM SÁT (OBSERVABILITY)
+# 9. QUAN SÁT & GIÁM SÁT (OBSERVABILITY)
 
-## 10.1 Logging
+## 9.1 Logging
 
 Structured JSON, mask PII/STK/secret; audit log bất biến (S3 Object Lock, 5 năm). Trường: timestamp, level, service, traceId, merchantId, requestId.
 
-## 10.2 Metrics
+## 9.2 Metrics
 
 RED per service + Golden Signals. `business_order_created_total`, `escrow_held_total`, `payout_total{status}`, `checkout_saga_compensation_total`.
 
-## 10.3 Distributed Tracing
+## 9.3 Distributed Tracing
 
 OpenTelemetry; quan trọng vì checkout đi qua ≥ 4 BC; 100% errors, 5% normal; propagate trace context qua **gRPC + Kafka**.
 
-## 10.4 Alerting
+## 9.4 Alerting
 
 | Alert | Severity | Hành động |
 | --- | --- | --- |
@@ -813,11 +768,11 @@ OpenTelemetry; quan trọng vì checkout đi qua ≥ 4 BC; 100% errors, 5% norma
 | Checkout saga compensation spike | P2 | Slack + runbook |
 | Truy cập xuyên tenant phát hiện | P1 | PagerDuty + Security |
 
-## 10.5 Dashboard
+## 9.5 Dashboard
 
 Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fail, tenant violation, audit) · **Finance** (escrow balance, payout, đối soát).
 
-# 11. AI SECURITY
+# 10. AI SECURITY
 
 **Không áp dụng (N/A — R-A1):** hệ thống không sử dụng thành phần AI/LLM. Nếu sau này thêm (vd gợi ý sản phẩm bằng LLM), mục này bắt buộc kích hoạt theo checklist AI Security.
 
@@ -836,16 +791,16 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 
 ### A.2 Chỉ mục ADR cấp hệ thống (R-A13 / PHẦN F)
 
-> Quyết định ảnh hưởng nhiều BC → ADR cấp hệ thống. ADR nội bộ một BC → Tech Spec §7 của BC đó.
+> Quyết định ảnh hưởng nhiều BC → ADR cấp hệ thống. ADR nội bộ một BC → Tech Spec §6 của BC đó.
 
 | ADR | Quyết định | Trạng thái | View/§ ảnh hưởng |
 | --- | --- | --- | --- |
-| ADR-0001 | DB-per-Context, không FK xuyên BC | Accepted | §2.2, §6 |
-| ADR-0002 | Orchestration (Checkout) cho luồng tiền | Accepted | §2.2, §4 |
-| ADR-0003 | Event-Driven qua Kafka; event là Published Language | Accepted | §2.3, §4.3 |
-| ADR-0004 | Escrow giữ tiền đến khi giao hàng hoàn tất | Accepted | §4, §6 |
-| ADR-0005 | Chứng từ tài chính WORM (S3 Object Lock) | Accepted | §6.4.3, §7.3 |
-| ADR-0006 | Zero-Trust (mTLS/SVID + PDP/PEP), nhiều giai đoạn | Proposed | §7 |
+| ADR-0001 | DB-per-Context, không FK xuyên BC | Accepted | §2.2, §5 |
+| ADR-0002 | Orchestration (Checkout) cho luồng tiền | Accepted | §2.2, §3 |
+| ADR-0003 | Event-Driven qua Kafka; event là Published Language | Accepted | §2.3, §3.3 |
+| ADR-0004 | Escrow giữ tiền đến khi giao hàng hoàn tất | Accepted | §3, §5 |
+| ADR-0005 | Chứng từ tài chính WORM (S3 Object Lock) | Accepted | §5.2.3, §6.3 |
+| ADR-0006 | Zero-Trust (mTLS/SVID + PDP/PEP), nhiều giai đoạn | Proposed | §6 |
 | ADR-0012 | Bổ sung Dispute & Refund BC (lộ trình) | Proposed | §1.2.2 |
 
 ### A.3 Correspondence — ánh xạ tầng view (R-B14 / §17)
@@ -864,13 +819,13 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 
 | BC | §AD liên quan | Tech Spec |
 | --- | --- | --- |
-| Checkout | §2.2, §3.2.1, §4.1.1, §5, §9.2 | [techspec/Checkout.md](techspec/Checkout.md) ✅ |
-| Payment | §3.2.2, §4.1.3, §6, §7.3 | `techspec/Payment.md` (TODO) |
-| Order | §4, §5 | `techspec/Order.md` (TODO) |
-| Catalog | §2.2, §4.3 | `techspec/Catalog.md` (TODO) |
-| Inventory | §4.3, §5 | `techspec/Inventory.md` (TODO) |
-| Identity | §7 | `techspec/Identity.md` (TODO) |
-| Notification | §4.3 | `techspec/Notification.md` (TODO) |
+| Checkout | §2.2, §3.1.1, §4, §8.2 | [techspec/Checkout.md](techspec/Checkout.md) ✅ |
+| Payment | §2.2, §3.1.3, §5, §6.3 | `techspec/Payment.md` (TODO) |
+| Order | §3, §4 | `techspec/Order.md` (TODO) |
+| Catalog | §2.2, §3.3 | `techspec/Catalog.md` (TODO) |
+| Inventory | §3.3, §4 | `techspec/Inventory.md` (TODO) |
+| Identity | §6 | `techspec/Identity.md` (TODO) |
+| Notification | §3.3 | `techspec/Notification.md` (TODO) |
 
 ## B. Rủi ro & Nợ kỹ thuật (R-A14)
 
@@ -893,14 +848,14 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 | 1 | Đúng **01 AD** cho hệ thống; mỗi BC có Tech Spec riêng (R-0) | ☑ |
 | 2 | §1.2.3 Context (L1) một sơ đồ; §2.2 Container có **BC là hộp**, datastore trong BC | ☑ |
 | 3 | §2.3 Context Map đi kèm §2.2 (topology + ngữ nghĩa quan hệ) | ☑ |
-| 4 | §4 chỉ chứa flow **xuyên BC**; flow nội bộ đẩy xuống Tech Spec | ☑ |
+| 4 | §3 chỉ chứa flow **xuyên BC**; flow nội bộ đẩy xuống Tech Spec | ☑ |
 | 5 | Công nghệ phân loại binding vs indicative; nêu quyết định polyglot (§2.1.1) | ☑ |
-| 6 | §5 hợp đồng nêu capability + đảm bảo, trỏ tới contract artifact (R-C6/C7) | ☑ |
+| 6 | §4 hợp đồng nêu capability + đảm bảo, trỏ tới contract artifact (R-C6/C7) | ☑ |
 | 7 | Phụ lục A.3/A.4 correspondence Context↔Container↔Deployment & AD↔Tech Spec | ☑ |
 | 8 | Sơ đồ là Mermaid, đúng grain, có legend, nhãn = ý định (không method name) | ☑ |
 | 9 | Quyết định nặng cấp hệ thống có ADR; chỉ mục ở A.2 | ☑ |
-| 10 | `TBD` đánh dấu tường minh (§1.4.2, §6.4.3, §7.3) | ☑ |
-| 11 | Mục Optional không dùng ghi "N/A — lý do" (§11 AI Security) | ☑ |
+| 10 | `TBD` đánh dấu tường minh (§1.4.2, §5.2.3, §6.3) | ☑ |
+| 11 | Mục Optional không dùng ghi "N/A — lý do" (§10 AI Security) | ☑ |
 | 12 | Version + changelog cập nhật | ☑ |
 
 ## E. PHÊ DUYỆT TÀI LIỆU
