@@ -7,10 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import tech.vsf.ptnt.msfw.domain.statemachine.StateMachine;
 import tech.vsf.ptnt.msfw.domain.workflow.CompensatingWorkflow;
 import tech.vsf.ptnt.msfw.domain.workflow.WorkflowContext;
 import tech.vsf.ptnt.msfw.domain.workflow.WorkflowObserver;
 import vn.marketplace.checkout.application.checkout.CatalogPort.SkuPriceDto;
+import vn.marketplace.checkout.domain.checkout.CheckoutState;
+import vn.marketplace.checkout.domain.checkout.CheckoutTrigger;
 import vn.marketplace.checkout.application.checkout.CheckoutSessionPort.CheckoutSession;
 import vn.marketplace.checkout.application.checkout.InventoryPort.ReservationDto;
 import vn.marketplace.checkout.application.checkout.InventoryPort.ReserveItemDto;
@@ -21,10 +24,8 @@ import vn.marketplace.checkout.application.checkout.PaymentPort.EscrowAllocation
 import vn.marketplace.checkout.application.checkout.PaymentPort.EscrowDto;
 import vn.marketplace.checkout.application.checkout.SubmitCheckoutCmd.CheckoutItemInput;
 import vn.marketplace.checkout.domain.checkout.Currency;
-import tech.vsf.ptnt.msfw.domain.core.IdempotencyKey;
 import vn.marketplace.checkout.domain.checkout.Money;
 import vn.marketplace.checkout.domain.checkout.management.CartSnapshot;
-import vn.marketplace.checkout.domain.checkout.management.CheckoutSaga;
 import vn.marketplace.checkout.domain.checkout.management.LineItem;
 import vn.marketplace.checkout.domain.checkout.management.MerchantGroup;
 import vn.marketplace.checkout.domain.checkout.management.OrderSplitter;
@@ -102,14 +103,15 @@ public class SubmitCheckoutUc implements SubmitCheckout {
             throw new CheckoutDomainException(CheckoutErrorCode.CHECKOUT_IN_PROGRESS);
         }
         try {
-            return runSaga(cmd);
+            return runCheckout(cmd);
         } finally {
             sessions.unlock(cmd.idempotencyKey());
         }
     }
 
-    private CheckoutResultView runSaga(SubmitCheckoutCmd cmd) {
-        CheckoutSaga saga = CheckoutSaga.start(new IdempotencyKey(cmd.idempotencyKey()), cmd.buyerId());
+    private CheckoutResultView runCheckout(SubmitCheckoutCmd cmd) {
+        // Explicit lifecycle SoT (msfw statemachine); the workflow fires it as it walks the steps.
+        StateMachine<CheckoutState, CheckoutTrigger> state = new StateMachine<>(CheckoutState.PRICING);
 
         // ---- PRICING: Catalog is the only price authority (TC-CHK-03); no side effects yet ----
         CartSnapshot cart = priceCart(cmd);
@@ -120,7 +122,7 @@ public class SubmitCheckoutUc implements SubmitCheckout {
 
         try {
             WorkflowContext result = workflow.execute(ctx -> {
-                ctx.put("cmd", cmd).put("saga", saga).put("cart", cart).put("groups", groups);
+                ctx.put("cmd", cmd).put("state", state).put("cart", cart).put("groups", groups);
             });
             List<String> orderIds = result.require("orderIds");
             EscrowDto escrow = result.require("escrow");
@@ -138,7 +140,9 @@ public class SubmitCheckoutUc implements SubmitCheckout {
                         "COMPENSATION INCOMPLETE — manual reconciliation required: "
                                 + suppressedMessages(stepFailure));
             }
-            saga.fail(stepFailure.getMessage());
+            if (!state.isTerminal()) {
+                state.fire(CheckoutTrigger.FAIL);
+            }
             sessions.saveFailed(cmd.idempotencyKey(), cmd.buyerId(), stepFailure.getMessage());
             throw new CheckoutDomainException(CheckoutErrorCode.CHECKOUT_FAILED,
                     "Checkout failed and was compensated — retry with a new idempotency key. Cause: "
@@ -155,14 +159,12 @@ public class SubmitCheckoutUc implements SubmitCheckout {
         return CompensatingWorkflow.named("checkout")
                 .observer(observer)
                 .step("reserve-stock", ctx -> {
+                    advance(ctx, CheckoutTrigger.RESERVE);
                     SubmitCheckoutCmd cmd = ctx.require("cmd");
-                    CheckoutSaga saga = ctx.require("saga");
                     CartSnapshot cart = ctx.require("cart");
-                    saga.markReserving();
                     ReservationDto reservation =
                             inventory.reserveStock(cmd.idempotencyKey(), aggregateBySku(cart));
                     if (!reservation.allReserved()) {
-                        saga.fail("OUT_OF_STOCK");
                         throw new CheckoutDomainException(CheckoutErrorCode.OUT_OF_STOCK,
                                 "Out of stock: " + reservation.shortages());
                     }
@@ -172,10 +174,9 @@ public class SubmitCheckoutUc implements SubmitCheckout {
                     inventory.releaseStock(reservation.reservationId());
                 })
                 .step("create-orders", ctx -> {
+                    advance(ctx, CheckoutTrigger.CREATE_ORDERS);
                     SubmitCheckoutCmd cmd = ctx.require("cmd");
-                    CheckoutSaga saga = ctx.require("saga");
                     List<MerchantGroup> groups = ctx.require("groups");
-                    saga.markOrdering();
                     List<String> createdOrderIds = new ArrayList<>();
                     Map<String, String> orderIdByMerchant = new LinkedHashMap<>();
                     ctx.put("orderIds", createdOrderIds).put("orderIdByMerchant", orderIdByMerchant);
@@ -198,13 +199,11 @@ public class SubmitCheckoutUc implements SubmitCheckout {
                 // No escrow-cancel API exists: like before, a failure AFTER initEscrow compensates
                 // orders + reservation only.
                 .step("init-escrow", ctx -> {
+                    advance(ctx, CheckoutTrigger.INIT_ESCROW);
                     SubmitCheckoutCmd cmd = ctx.require("cmd");
-                    CheckoutSaga saga = ctx.require("saga");
                     CartSnapshot cart = ctx.require("cart");
                     List<MerchantGroup> groups = ctx.require("groups");
-                    List<String> createdOrderIds = ctx.require("orderIds");
                     Map<String, String> orderIdByMerchant = ctx.require("orderIdByMerchant");
-                    saga.markEscrowing(createdOrderIds);
                     List<EscrowAllocationDto> allocations = groups.stream()
                             .map(g -> new EscrowAllocationDto(orderIdByMerchant.get(g.merchantId()),
                                     g.merchantId(), g.subtotal().amount()))
@@ -215,16 +214,21 @@ public class SubmitCheckoutUc implements SubmitCheckout {
                     ctx.put("escrow", escrow);
                 })
                 .step("complete-session", ctx -> {
+                    advance(ctx, CheckoutTrigger.REDIRECT);
                     SubmitCheckoutCmd cmd = ctx.require("cmd");
-                    CheckoutSaga saga = ctx.require("saga");
                     CartSnapshot cart = ctx.require("cart");
                     List<String> createdOrderIds = ctx.require("orderIds");
                     EscrowDto escrow = ctx.require("escrow");
-                    saga.complete(escrow.paymentUrl());
                     sessions.saveCompleted(cmd.idempotencyKey(), cmd.buyerId(), createdOrderIds,
                             escrow.paymentUrl(), cart.grandTotal().amount());
                 })
                 .build();
+    }
+
+    /** Fires the lifecycle trigger for the step about to run (the per-request machine is in ctx). */
+    private void advance(WorkflowContext ctx, CheckoutTrigger trigger) {
+        StateMachine<CheckoutState, CheckoutTrigger> state = ctx.require("state");
+        state.fire(trigger);
     }
 
     /**
