@@ -20,7 +20,6 @@ public enum CheckoutErrorCode {
             "A checkout with this idempotency key is already being processed"),
     CHECKOUT_FAILED(DomainErrorCode.INTERNAL_ERROR,
             "Checkout failed after compensation — safe to retry"),
-    INVALID_TRANSITION(DomainErrorCode.BUSINESS_RULE_VIOLATION, "Illegal saga state transition"),
     SESSION_NOT_FOUND(DomainErrorCode.NOT_FOUND, "No checkout session for this key"),
     TENANT_MISMATCH(DomainErrorCode.BUSINESS_RULE_VIOLATION,
             "Checkout session does not belong to the caller");
