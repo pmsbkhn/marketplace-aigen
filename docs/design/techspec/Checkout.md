@@ -4,7 +4,7 @@
 | --- | --- |
 | Mã tài liệu | `TS-CHECKOUT-v1.1` |
 | Loại | **Tech Spec** — cấp bounded context (1 file / BC) |
-| Thuộc AD | [AD-Marketplace-AiGen](../AD-Marketplace-AiGen.md) — BC "Checkout": structure §2.2, context map §2.3, flows §4, interfaces §5, security §7 |
+| Thuộc AD | [AD-Marketplace-AiGen](../AD-Marketplace-AiGen.md) — BC "Checkout": structure §2.2, context map §2.3, flows §3, interfaces §4, security §6 |
 | Chuẩn áp dụng | `STD-DOC-v1.11` (Module/C&C/Deployment views) · arc42 · C4 L3 · ISO 42010 |
 | Owner | Checkout team |
 | Tier / Data class | **Tier 2 — Business Critical** · L2 (cart, session) + L3 (giá snapshot, merchantId) |
@@ -55,11 +55,11 @@ flowchart LR
 
 - **Vào:** REST `POST /v1/checkout` từ API Gateway (JWT, qua BFF).
 - **Ra (đồng bộ, gRPC, mTLS):** lấy giá (Catalog), giữ kho (Inventory), tạo đơn (Order), init escrow (Payment).
-- **Trust boundary (microsegmentation — AD §7, R-A24):** Checkout BC = **một microsegment** (mặc định 1 BC = 1 segment). Vào qua **PEP cổng vào segment** (verify JWT/SVID + authz); ra (4 gRPC) qua **PEP egress** của segment (trình SVID + PoLP). Mọi gRPC xuyên segment qua mTLS (SVID); **default-deny** giữa các segment. Không tin theo vị trí mạng.
+- **Trust boundary (microsegmentation — AD §6, R-A24):** Checkout BC = **một microsegment** (mặc định 1 BC = 1 segment). Vào qua **PEP cổng vào segment** (verify JWT/SVID + authz); ra (4 gRPC) qua **PEP egress** của segment (trình SVID + PoLP). Mọi gRPC xuyên segment qua mTLS (SVID); **default-deny** giữa các segment. Không tin theo vị trí mạng.
 
 **Goals:** tổng hợp giá (snapshot) → reserve kho → tách đơn theo Merchant → tạo pending order → init escrow, tất cả trong **một saga đồng bộ**; **compensation tập trung** khi một bước lỗi; **idempotency** chống double-submit.
 
-**Non-goals (thuộc BC khác):** xử lý webhook thanh toán (Payment); state machine đơn sau khi tạo (Order); quản lý giỏ hàng/cart; tồn kho (Inventory). Saga **xuyên BC** end-to-end → ở [AD §4.1.1](../AD-Marketplace-AiGen.md) (compensation: AD §9.2); Tech Spec này chỉ mô tả góc nhìn điều phối của Checkout.
+**Non-goals (thuộc BC khác):** xử lý webhook thanh toán (Payment); state machine đơn sau khi tạo (Order); quản lý giỏ hàng/cart; tồn kho (Inventory). Saga **xuyên BC** end-to-end → ở [AD §3.1.1](../AD-Marketplace-AiGen.md) (compensation: AD §8.2); Tech Spec này chỉ mô tả góc nhìn điều phối của Checkout.
 
 # 2. Requirements (tóm tắt — nguồn đầy đủ ở backlog)
 
@@ -103,6 +103,7 @@ flowchart TB
   end
   subgraph APP["APPLICATION LAYER (điều phối)"]
     UC["SubmitCheckout (ports.in)<br/>impl: SubmitCheckoutUc"]:::ap
+    WF["CompensatingWorkflow «msfw»<br/>steps + reverse compensation"]:::ap
     subgraph POUT["ports.out"]
       CATP["CatalogPort"]:::ap
       INVP["InventoryPort"]:::ap
@@ -112,17 +113,15 @@ flowchart TB
     end
   end
   subgraph DOMAIN["DOMAIN LAYER (lõi nghiệp vụ) — pure Java"]
-    SAGA["CheckoutSaga «Aggregate Root»"]:::dm
-    IDK["IdempotencyKey «Identity»"]:::dm
+    FSM["CheckoutState «FSM» + CheckoutTrigger<br/>(msfw State / StateMachine)"]:::dm
     CART["CartSnapshot / LineItem / MerchantGroup «Value Object»"]:::dm
     SPLIT["OrderSplitter «Domain Service»"]:::dm
   end
   CTRL --> UC
-  UC --> CATP & INVP & ORDP & PAYP & SESSP
-  UC --> SAGA
+  UC --> WF
   UC --> SPLIT
-  SAGA --- IDK
-  SAGA --- CART
+  WF --> CATP & INVP & ORDP & PAYP & SESSP
+  WF -. fires .-> FSM
   CATOA -. implements .-> CATP
   INVOA -. implements .-> INVP
   ORDOA -. implements .-> ORDP
@@ -141,7 +140,7 @@ flowchart TB
 
 | Feature slice (package) | Domain | Application | Adapter |
 | --- | --- | --- | --- |
-| **`submitcheckout`** (ghi · saga điều phối) | CheckoutSaga, IdempotencyKey, CartSnapshot/LineItem/MerchantGroup, OrderSplitter | `SubmitCheckout`/`SubmitCheckoutUc`; ports.out Catalog/Inventory/Order/Payment | `CheckoutController` (POST); CatalogClientOa/InventoryClientOa/OrderClientOa/PaymentClientOa |
+| **`submitcheckout`** (ghi · điều phối) | CheckoutState/CheckoutTrigger (FSM), CartSnapshot/LineItem/MerchantGroup, OrderSplitter | `SubmitCheckout`/`SubmitCheckoutUc` trên `CompensatingWorkflow` (msfw); ports.out Catalog/Inventory/Order/Payment | `CheckoutController` (POST); CatalogClientOa/InventoryClientOa/OrderClientOa/PaymentClientOa |
 | **`checkoutstatus`** (đọc · `GET /v1/checkout/{id}`, scope `checkout:read`) | — (đọc snapshot phiên) | `GetCheckoutStatus`/`…Uc` | `CheckoutStatusController` (GET) |
 | _(shared trong BC)_ **`session`** | — | `CheckoutSessionPort` (idempotency + phiên) | `CheckoutSessionOa` (Redis) |
 
@@ -161,10 +160,10 @@ checkout-adapter/       …checkout.submitcheckout.{inbound,outbound}
 | --- | --- | --- | --- |
 | Adapter · inbound | `CheckoutController` (REST) | Kết thúc HTTP; map request → `SubmitCheckoutCmd`; extract JWT (`buyerId`, tenant scope); gọi `SubmitCheckout` | Gọi gRPC trực tiếp; chứa luật saga/tách đơn |
 | Adapter · outbound | `CatalogClientOa` / `InventoryClientOa` / `OrderClientOa` / `PaymentClientOa` (gRPC, mTLS); `CheckoutSessionOa` (Redis) | **Implements ports.out**; map gRPC/Redis ↔ domain DTO; distributed lock | Chứa business; biết luật saga |
-| Application | `SubmitCheckout` (ports.in) · impl **`SubmitCheckoutUc`** | Điều phối saga: pricing → reserve → split → order → escrow; idempotency; compensation **ngược thứ tự**; chỉ gọi qua **ports.out** | Biết chi tiết gRPC/Redis; phụ thuộc adapter |
+| Application | `SubmitCheckout` (ports.in) · impl **`SubmitCheckoutUc`** | Điều phối qua **`CompensatingWorkflow`** (msfw): pricing → reserve → split → order → escrow; **bắn `CheckoutState` FSM** mỗi bước; idempotency; compensation **ngược thứ tự**; chỉ gọi qua **ports.out** | Biết chi tiết gRPC/Redis; phụ thuộc adapter |
 | Application | ports.out: `CatalogPort` / `InventoryPort` / `OrderPort` / `PaymentPort` / `CheckoutSessionPort` | Khai báo cổng ra (DIP) | Có implementation |
-| Domain | `CheckoutSaga` «Aggregate Root» | Trạng thái saga + invariant (một chiều · compensation ngược · không mồ côi) | I/O; biết gRPC/Redis/Spring |
-| Domain | `IdempotencyKey` «Identity» · `CartSnapshot`/`LineItem`/`MerchantGroup` «Value Object» · `OrderSplitter` «Domain Service» | Mô hình nghiệp vụ thuần; tách đơn (pure logic) | I/O; phụ thuộc tầng ngoài |
+| Domain | `CheckoutState` «FSM» + `CheckoutTrigger` (msfw `State`/`StateMachine`) | Nguồn-sự-thật thứ tự bước: `PRICING→RESERVING→ORDERING→ESCROWING→REDIRECTED`, `FAIL` từ mọi bước non-terminal; terminal đóng băng; `RESERVE` giao trùng = no-op idempotent | I/O; biết gRPC/Redis/Spring |
+| Domain | `CartSnapshot`/`LineItem`/`MerchantGroup` «Value Object» · `OrderSplitter` «Domain Service» | Mô hình nghiệp vụ thuần; tách đơn (pure logic) | I/O; phụ thuộc tầng ngoài |
 
 **Ports — biên hexagon (chữ ký; đầy đủ → repo):**
 
@@ -204,7 +203,7 @@ flowchart LR
   API -->|"gRPC · mTLS"| PAY["Payment Svc"]
 ```
 
-**Connector catalog (zero-trust):** _inbound_ đi qua **PEP cổng vào segment**; 4 connector gRPC ra ngoài đi qua **PEP egress** của segment (mTLS + PoLP). Checkout = 1 microsegment (AD §7).
+**Connector catalog (zero-trust):** _inbound_ đi qua **PEP cổng vào segment**; 4 connector gRPC ra ngoài đi qua **PEP egress** của segment (mTLS + PoLP). Checkout = 1 microsegment (AD §6).
 
 | Connector | From → To | Protocol | Authn / Authz |
 | --- | --- | --- | --- |
@@ -219,7 +218,7 @@ flowchart LR
 
 | Module (tầng) | Runtime component |
 | --- | --- |
-| `CheckoutController`, `SubmitCheckoutUc`, `OrderSplitter`, `CheckoutSaga` (domain/app) | Checkout API |
+| `CheckoutController`, `SubmitCheckoutUc` (+ `CompensatingWorkflow`), `OrderSplitter`, `CheckoutState` (domain/app) | Checkout API |
 | `CatalogClientOa`/`InventoryClientOa`/`OrderClientOa`/`PaymentClientOa` (adapter outbound) | Checkout API (gọi ra ngoài) |
 | `CheckoutSessionOa` (adapter outbound) | Checkout API → Redis |
 
@@ -254,8 +253,8 @@ flowchart TB
 
 **Thực thi zero-trust ở tầng deploy:**
 
-- **Checkout = 1 microsegment** (AD §7, R-A24). NetworkPolicy **default-deny giữa segment**; chỉ mở GW→Checkout (ingress), Checkout→Redis, Checkout→peers (egress gRPC tới Catalog/Inventory/Order/Payment).
-- **Workload identity:** SVID (qua SPIRE) cho workload Checkout **và PEP ingress/egress** (PEP cũng là workload — AD §7); cert xoay tự động. Quyền hạ tầng qua **IRSA** — ServiceAccount + IAM role riêng (chỉ truy cập Redis, **không** DB nào).
+- **Checkout = 1 microsegment** (AD §6, R-A24). NetworkPolicy **default-deny giữa segment**; chỉ mở GW→Checkout (ingress), Checkout→Redis, Checkout→peers (egress gRPC tới Catalog/Inventory/Order/Payment).
+- **Workload identity:** SVID (qua SPIRE) cho workload Checkout **và PEP ingress/egress** (PEP cũng là workload — AD §6); cert xoay tự động. Quyền hạ tầng qua **IRSA** — ServiceAccount + IAM role riêng (chỉ truy cập Redis, **không** DB nào).
 - **Không egress Internet** (Checkout không gọi external provider — đó là việc của Payment); egress chỉ tới các segment peer cho phép.
 - Stateless → HPA scale theo RPS; graceful shutdown chỉ cần drain HTTP (30s), không in-flight queue.
 
@@ -307,35 +306,38 @@ flowchart TB
 
 ## 4.2 Domain model
 
-> Domain layer (pure Java): **CheckoutSaga** là Aggregate Root điều phối, sống trong bộ nhớ một request (Checkout stateless, durability ở Redis qua `CheckoutSessionPort`).
+> Checkout **không có aggregate riêng**. Vòng đời điều phối là một **finite state machine** —
+> `CheckoutState` dựng trên msfw `State`/`StateMachine` (`tech.vsf.ptnt.msfw.domain.statemachine`).
+> `SubmitCheckoutUc` bắn FSM qua các bước của `CompensatingWorkflow`. **Trạng thái sống ở hai chỗ:**
+> chuỗi bước = **transient trong một request** (workflow + StateMachine); kết quả **terminal persist
+> ở session store** (Redis) qua `CheckoutSessionPort` (§4.3). Phần domain thuần còn lại: VO
+> `CartSnapshot/LineItem/MerchantGroup` + Domain Service `OrderSplitter`.
 
 ```mermaid
 classDiagram
-  class CheckoutSaga {
-    «Aggregate Root»
-    +IdempotencyKey key
-    +SagaState state
-    +List~SagaStep~ completedSteps
-    +start()
-    +advance(step)
-    +compensate()
-    +complete(paymentUrl, orderIds)
-    +fail(reason)
+  class CheckoutState {
+    <<enumeration · msfw State>>
+    PRICING
+    RESERVING
+    ORDERING
+    ESCROWING
+    REDIRECTED
+    FAILED
+    +on(CheckoutTrigger) CheckoutState
+    +isTerminal() boolean
   }
-  class IdempotencyKey {
-    «Identity»
-    +String value
-  }
-  class SagaStep {
-    <<Value Object>>
-    +StepType type
-    +StepStatus status
-    +CompensationAction compensation
+  class CheckoutTrigger {
+    <<enumeration>>
+    RESERVE
+    CREATE_ORDERS
+    INIT_ESCROW
+    REDIRECT
+    FAIL
   }
   class CartSnapshot {
     <<Value Object>>
     +List~LineItem~ items
-    +Money totalPrice
+    +Money grandTotal
   }
   class LineItem {
     <<Value Object>>
@@ -350,23 +352,24 @@ classDiagram
     +List~LineItem~ items
     +Money subtotal
   }
-  CheckoutSaga *-- IdempotencyKey
-  CheckoutSaga *-- CartSnapshot
-  CheckoutSaga *-- "1..*" SagaStep
+  class OrderSplitter {
+    <<Domain Service>>
+    +split(CartSnapshot) List~MerchantGroup~
+  }
+  CheckoutState ..> CheckoutTrigger : on(trigger)
   CartSnapshot *-- "1..*" LineItem
-  CheckoutSaga *-- "1..*" MerchantGroup : OrderSplitter produces
+  OrderSplitter ..> MerchantGroup : produces
 ```
 
 **Invariant:**
 
-1. SagaState tiến **một chiều**: `PRICING → RESERVING → ORDERING → ESCROWING → REDIRECTED | FAILED`; terminal bất biến.
-2. Compensation chạy **ngược** thứ tự bước đã thành công — không bỏ bước.
-3. Không tạo order nếu chưa reserve thành công.
-4. Không init escrow nếu chưa tạo đủ pending orders.
-5. `IdempotencyKey` immutable sau khi tạo phiên.
-6. **Không reservation mồ côi:** saga fail sau reserve → phải release. (Enforcement tự động → AaC.)
+1. `CheckoutState` tiến **một chiều**: `PRICING → RESERVING → ORDERING → ESCROWING → REDIRECTED`; `FAIL` từ mọi bước non-terminal; terminal **đóng băng** (engine `StateMachine` chặn fire vào terminal).
+2. Compensation chạy **ngược** thứ tự bước đã thành công — do `CompensatingWorkflow` (mỗi `.step` khai compensation cạnh nó).
+3. Thứ tự bước cưỡng chế bởi FSM: không sang ORDERING khi chưa reserve, không sang ESCROWING khi chưa tạo đủ pending order (trigger sai thứ tự → `IllegalStateTransitionException`).
+4. `RESERVE` giao trùng khi đang `RESERVING` = **no-op idempotent** (state trả `this`).
+5. **Không reservation mồ côi:** bước lỗi sau reserve → compensation release (CompensatingWorkflow); fitness function chạy định kỳ (§8).
 
-### 4.2.1 State machine của saga
+### 4.2.1 State machine — `CheckoutState`
 
 ```mermaid
 stateDiagram-v2
@@ -382,6 +385,8 @@ stateDiagram-v2
     REDIRECTED --> [*]
     FAILED --> [*]
 ```
+
+> Cùng đồ thị mà `SubmitCheckoutUc` bắn qua trigger (`RESERVE` / `CREATE_ORDERS` / `INIT_ESCROW` / `REDIRECT` / `FAIL`); nhãn cạnh ở trên là *điều kiện nghiệp vụ* phát ra trigger tương ứng. Luật chuyển được test độc lập ở `CheckoutStateTest` (domain).
 
 ## 4.3 Data model — Redis key schema
 
@@ -422,7 +427,7 @@ stateDiagram-v2
 
 # 5. Key flows
 
-> Sequence ở mức C&C view — lifeline là runtime component. (Saga end-to-end xuyên BC → [AD §4.1.1](../AD-Marketplace-AiGen.md).)
+> Sequence ở mức C&C view — lifeline là runtime component. (Saga end-to-end xuyên BC → [AD §3.1.1](../AD-Marketplace-AiGen.md).)
 
 ## 5.1 Happy path — Checkout orchestration
 
@@ -499,7 +504,7 @@ sequenceDiagram
 
 # 6. Operations & Resilience
 
-> DR cấp platform ở [AD §9.3](../AD-Marketplace-AiGen.md) — dưới đây chỉ **delta** của BC.
+> DR cấp platform ở [AD §8.3](../AD-Marketplace-AiGen.md) — dưới đây chỉ **delta** của BC.
 
 **Backup & Recovery (delta):**
 
@@ -535,9 +540,9 @@ sequenceDiagram
 - **Reliability/alert:** compensation spike (P2), checkout fail rate > 5% (P2), Redis connection loss (P1).
 - **Observability:** `checkout_started_total`, `checkout_success_total`, `checkout_failed_total{reason}`, `checkout_saga_compensation_total`, `checkout_duration_ms`; trace context propagate qua mọi gRPC child span.
 
-**Zero-trust — anchor index (ánh xạ AD §7 ↦ Tech Spec):**
+**Zero-trust — anchor index (ánh xạ AD §6 ↦ Tech Spec):**
 
-| Nguyên tắc (AD §7) | Thực thi trong Tech Spec này |
+| Nguyên tắc (AD §6) | Thực thi trong Tech Spec này |
 | --- | --- |
 | Microsegmentation (1 BC = 1 segment, R-A24) | §1, §3.3 Checkout = 1 segment; PEP ingress + egress; default-deny giữa segment |
 | Identity, không theo mạng | §3.2 connector catalog (mTLS/SVID mọi gRPC xuyên segment); JWT tại Gateway |
@@ -562,7 +567,7 @@ sequenceDiagram
 
 > Hexagonal + stateless → test dễ, không cần infra nặng.
 
-- **Unit** (domain: `OrderSplitter`, `CheckoutSaga`): luật tách đơn thuần logic; compensation order đúng — pure domain, không cần Redis/gRPC (fake ports.out).
+- **Unit** (domain: `OrderSplitter`, `CheckoutState`): luật tách đơn + luật chuyển FSM (`CheckoutStateTest`) thuần logic; compensation order đúng — pure domain, không cần Redis/gRPC (fake ports.out).
 - **Contract test:** gRPC proto với Catalog/Inventory/Order/Payment; consumer-driven.
 - **Integration:** mock downstream gRPC; mỗi bước lỗi → compensation đúng; Redis idempotency.
 - **Failure-injection:** Catalog timeout → 503 không reserve; Inventory fail → 409; Escrow fail → compensation đầy đủ.
