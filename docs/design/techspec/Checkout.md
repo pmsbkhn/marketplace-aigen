@@ -2,14 +2,14 @@
 
 | Thông tin tài liệu | Giá trị |
 | --- | --- |
-| Mã tài liệu | `TS-CHECKOUT-v1.1` |
+| Mã tài liệu | `TS-CHECKOUT-v1.4` |
 | Loại | **Tech Spec** — cấp bounded context (1 file / BC) |
 | Thuộc AD | [AD-Marketplace-AiGen](../AD-Marketplace-AiGen.md) — BC "Checkout": structure §2.2, context map §2.3, flows §3, interfaces §4, security §6 |
-| Chuẩn áp dụng | `STD-DOC-v1.11` (Module/C&C/Deployment views) · arc42 · C4 L3 · ISO 42010 |
+| Chuẩn áp dụng | `STD-DOC-v1.15` (Module/C&C/Deployment views) · arc42 · C4 L3 · ISO 42010 |
 | Owner | Checkout team |
 | Tier / Data class | **Tier 2 — Business Critical** · L2 (cart, session) + L3 (giá snapshot, merchantId) |
 | RTO / RPO | RTO < 4h · RPO < 1h |
-| Trạng thái | Draft v1.1 |
+| Trạng thái | Draft v1.4 |
 | Sơ đồ | Mermaid (toàn bộ) |
 | Ngoài phạm vi | AaC / fitness-function enforcement (tách riêng) — Tech Spec này chỉ chốt thiết kế & invariant. |
 
@@ -75,15 +75,40 @@ flowchart LR
 | FR6 | Compensation (saga rollback) | Bước lỗi → hủy pending order → release reservation (ngược thứ tự) |
 | FR7 | Idempotency | `Idempotency-Key` bắt buộc; cùng key → trả kết quả cũ, không chạy lại saga |
 
-**Non-functional / SLO (Tier 2):**
+**Non-functional / SLO (Tier 2):** — mỗi NFR tag **parent AD-NFR** (kiểu truy vết) + **satisfied-by** (R-E5/E6); catalog đầy đủ ở [AD §7.1](../AD-Marketplace-AiGen.md).
 
-| Thuộc tính | Mục tiêu |
-| --- | --- |
-| Checkout P99 (end-to-end) | < 800 ms (gồm orchestration nhiều BC) |
-| API availability | ≥ 99.9% |
-| RTO / RPO | < 4h / < 1h |
-| Throughput | 3.000 RPS sustained (flash sale) |
-| Degraded mode | Catalog/Inventory down ⇒ 503 (không tạo đơn sai giá/kho) |
+| Thuộc tính | Mục tiêu | Parent AD-NFR (kiểu) | Satisfied-by (trong BC) |
+| --- | --- | --- | --- |
+| Checkout P99 (end-to-end) | < 800 ms | `NFR-PERF-01` (**allocated**) | ngân sách per-hop §2.1 · cache giá Redis · saga đồng bộ |
+| API availability | ≥ 99.9% | `NFR-AVAIL-02` (**owned**) | stateless + HPA §3.3 · fail-safe degraded §6 |
+| RTO / RPO | < 4h / < 1h | `NFR-DR-02` (**owned**) | không DB → Redis ephemeral; reservation TTL tự giải phóng §4.3/§6 |
+| Throughput | 3.000 RPS sustained | `NFR-SCALE-01` (**allocated**) | HPA theo RPS §3.3 · stateless |
+| Degraded mode | Catalog/Inventory down ⇒ 503 | `NFR-PERF-04` (inherited) + ADR-CHK-4 | fail-safe: không tạo đơn sai giá/kho §6 |
+| Idempotency phiên (chống double-submit) | cùng key → đúng 1 saga | **BC-local** (không nổi lên AD) | Redis fast-path §4.3 · distributed lock · BN-2 |
+
+## 2.1 Ngân sách độ trễ — allocation cho `NFR-PERF-01` (R-E6)
+
+`Checkout P99 < 800 ms` (AD `NFR-PERF-01`) là target **end-to-end**, **allocated** xuống các bước của saga đồng bộ. Breakdown mục tiêu (**TBD** — tinh chỉnh từ load test, Open Q §9 #7):
+
+| Bước (tuần tự) | Ngân sách P99 | Cơ chế giữ budget |
+| --- | --- | --- |
+| pricing (Catalog) | ~120 ms | cache giá Redis; retry ≤ 1 (idempotent read) |
+| reserve (Inventory) | ~150 ms | 1 hop gRPC |
+| create order (×N merchant) | ~200 ms | loop theo `max_merchants_per_cart`; **scale theo số merchant** |
+| init escrow (Payment) | ~250 ms | 1 hop gRPC |
+| overhead (gateway, serialize, mạng) | ~80 ms | — |
+| **Tổng (compose-check)** | **~800 ms** | ⟹ thỏa parent `NFR-PERF-01` |
+
+> ⚠️ **Compose-check (R-E6):** `checkout.grpc_timeout_ms = 2000` (§4.4) là **trần chống treo, KHÔNG phải budget** — một hop chạm trần đã đủ phá P99. Loop tạo order **tuần tự** khiến độ trễ **scale theo số merchant** (tới `max_merchants_per_cart = 10`) → giỏ nhiều merchant có nguy cơ vượt 800 ms. Giảm thiểu: tạo order **song song** per-merchant (Open Q §9 #7). Đây đúng là mâu thuẫn mà việc ánh xạ NFR AD↔Tech Spec phải làm lộ ra.
+
+## 2.2 Quality attribute scenarios (cấp BC — R-E7)
+
+> Dẫn nguồn từ utility tree [AD §7.1](../AD-Marketplace-AiGen.md): `QAS-CHK-1` hiện thực **phần allocated** của `NFR-PERF-01` (= AD `QAS-PERF-01` nhìn từ Checkout); `QAS-CHK-2` là **BC-local** (invariant nội bộ, không nổi lên AD). Dạng 6 phần — *phản hồi* nối thẳng tactic (R-E5).
+
+| Scenario (thuộc tính) | Nguồn · Kích thích | Môi trường | Phản hồi (tactic → neo) | Thước đo |
+| --- | --- | --- | --- | --- |
+| **QAS-CHK-1** (Performance) → NFR-PERF-01 | Buyer · submit checkout giỏ nhiều Merchant | flash sale **3.000 RPS** | saga đồng bộ theo **ngân sách per-hop** (§2.1); cache giá Redis; HPA stateless (§3.3) | **P99 < 800 ms** (phần Checkout) |
+| **QAS-CHK-2** (Reliability — **BC-local**) | Bước escrow **lỗi** sau khi đã tạo order + reserve | vận hành, downstream lỗi/timeout | `CompensatingWorkflow` chạy **ngược thứ tự**: cancel pending order → release reservation; FSM → FAILED (§3.1, §4.2, §5.2) | **0 reservation/order mồ côi**; Redis state = FAILED |
 
 # 3. Design overview
 
@@ -521,17 +546,17 @@ sequenceDiagram
 
 # 7. Decisions & cross-cutting deltas (ADR-style — nội bộ BC)
 
-> ADR **nội bộ Checkout** (quyết định xuyên BC → [AD Phụ lục A.2](../AD-Marketplace-AiGen.md)).
+> ADR **nội bộ Checkout** — để **inline ở đây** vì ít/ngắn (R-F2 cho phép BC ADR inline thay vì file riêng). Quyết định **xuyên BC** → tập ADR hệ thống [`docs/design/adr/`](../adr/README.md) (chỉ mục [AD §A.2](../AD-Marketplace-AiGen.md)). Mỗi ADR ghi **Drivers (NFR)** — neo catalog [AD §7.1.2](../AD-Marketplace-AiGen.md).
 
-**ADR-CHK-1 — Orchestration (không choreography) cho luồng checkout.** Cần kiểm soát compensation tập trung vì liên quan tiền (escrow); choreography khó đảm bảo thứ tự rollback & phát hiện mồ côi. *Hệ quả:* Checkout là single point of coordination; down → không checkout được (chấp nhận — Tier 2).
+**ADR-CHK-1 — Orchestration (không choreography) cho luồng checkout.** _(Drivers: NFR-PERF-01, reliability "0 mồ côi" QAS-CHK-2; hệ thống: [ADR-0002](../adr/ADR-0002-orchestration-checkout.md).)_ Cần kiểm soát compensation tập trung vì liên quan tiền (escrow); choreography khó đảm bảo thứ tự rollback & phát hiện mồ côi. *Hệ quả:* Checkout là single point of coordination; down → không checkout được (chấp nhận — Tier 2).
 
-**ADR-CHK-2 — Một escrow cho tổng giỏ (không per-Merchant escrow).** Buyer trả một lần cho cả giỏ; Payment giữ tổng, phân bổ khi settle. *Hệ quả:* đơn giản hóa checkout; phức tạp hơn ở Settlement (Payment).
+**ADR-CHK-2 — Một escrow cho tổng giỏ (không per-Merchant escrow).** _(Drivers: NFR-FIN-01; hệ thống: [ADR-0004](../adr/ADR-0004-escrow.md).)_ Buyer trả một lần cho cả giỏ; Payment giữ tổng, phân bổ khi settle. *Hệ quả:* đơn giản hóa checkout; phức tạp hơn ở Settlement (Payment).
 
-**ADR-CHK-3 — Stateless + Redis session (không DB).** Phiên TTL ngắn; durability thuộc Order/Payment. *Hệ quả:* mất Redis = mất idempotency tạm thời; reservation tự giải phóng qua TTL.
+**ADR-CHK-3 — Stateless + Redis session (không DB).** _(Drivers: NFR-SCALE-01 stateless scale, NFR-DR-02 no-DB → phục hồi nhanh.)_ Phiên TTL ngắn; durability thuộc Order/Payment. *Hệ quả:* mất Redis = mất idempotency tạm thời; reservation tự giải phóng qua TTL.
 
-**ADR-CHK-4 — Giá snapshot server-side (không tin client).** Client gửi SKU+quantity; Checkout lấy giá thực từ Catalog. *Hệ quả:* thêm 1 gọi gRPC; Catalog down → checkout fail (fail-safe).
+**ADR-CHK-4 — Giá snapshot server-side (không tin client).** _(Drivers: NFR-FIN-01 giá đúng, NFR-SEC-02 chống tamper/tenant — STRIDE Tampering §7.)_ Client gửi SKU+quantity; Checkout lấy giá thực từ Catalog. *Hệ quả:* thêm 1 gọi gRPC; Catalog down → checkout fail (fail-safe).
 
-**ADR-CHK-5 — Reservation TTL 15 phút.** Đủ để Buyer trả tiền, không quá dài để block kho. Quá hạn → Inventory release → Order auto-cancel. *Theo dõi:* tỷ lệ reservation timeout để tune.
+**ADR-CHK-5 — Reservation TTL 15 phút.** _(Drivers: NFR-PERF-01 / Inventory throughput — BC-local tuning.)_ Đủ để Buyer trả tiền, không quá dài để block kho. Quá hạn → Inventory release → Order auto-cancel. *Theo dõi:* tỷ lệ reservation timeout để tune.
 
 **Cross-cutting deltas:**
 
@@ -589,3 +614,4 @@ sequenceDiagram
 4. **Reservation extension:** phiên còn sống nhưng chưa trả tiền → có renew reservation? *(Hiện tại: không — TTL 15 phút cố định.)* — _Owner: Inventory + Checkout_
 5. **Multi-currency:** single currency hay cần convert? *(Hiện tại: giả định VND.)* — _Owner: Payment + Checkout_
 6. **Audit trail:** ghi saga steps vào đâu để truy vết? Redis TTL quá ngắn; có cần event audit vào Kafka? *(Hiện tại: chỉ metrics + trace.)* — _Owner: Checkout + Platform_
+7. **Parallel order creation:** loop tạo pending order đang **tuần tự** → độ trễ scale theo số merchant, rủi ro vượt ngân sách `NFR-PERF-01` (§2.1). Tạo order **song song** per-merchant? Đánh đổi: phức tạp hơn ở compensation & đảm bảo thứ tự rollback. — _Owner: Checkout + Order_

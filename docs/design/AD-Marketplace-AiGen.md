@@ -2,15 +2,15 @@
 
 | Thông tin tài liệu | Giá trị |
 | --- | --- |
-| Mã tài liệu | `AD-MKTPLACE-AIGEN-v1.1` |
+| Mã tài liệu | `AD-MKTPLACE-AIGEN-v1.5` |
 | Loại | **Architecture Document (AD)** — cấp hệ thống (**1 file / hệ thống**) |
-| Phiên bản | `1.1.0` |
+| Phiên bản | `1.5.0` |
 | Trạng thái | ☐ Draft for review |
 | Ngày tạo | 2026-06-22 |
-| Cập nhật lần cuối | 2026-06-22 |
+| Cập nhật lần cuối | 2026-06-24 |
 | Dự án / Hệ thống | Marketplace-AiGen (E-commerce Marketplace, multi-merchant) |
 | Mức độ bảo mật | ☑ Internal |
-| Quy tắc viết | `STD-DOC-v1.11` — [docs/stds/QuyTac-AD-va-TechSpec.md](../stds/QuyTac-AD-va-TechSpec.md) |
+| Quy tắc viết | `STD-DOC-v1.15` — [docs/stds/QuyTac-AD-va-TechSpec.md](../stds/QuyTac-AD-va-TechSpec.md) |
 | Neo chuẩn | ISO/IEC/IEEE 42010:2022 · arc42 · C4 · DDD Context Mapping |
 | Sơ đồ | Mermaid (toàn bộ) |
 | Ngoài phạm vi | **Architecture-as-Code** (sinh view từ model, fitness function, drift detection, pipeline) — chuẩn hóa ở tài liệu riêng sau. Xem `docs/QuyTac-AD-ArchitectureAsCode.md`. |
@@ -19,10 +19,14 @@
 
 | Phiên bản | Ngày | Tác giả | Mô tả thay đổi | Người duyệt |
 | --- | --- | --- | --- | --- |
-| 1.0.0 | 2026-06-22 | [Tác giả] | Tạo mới theo `STD-DOC-v1.11`; template đầu mục theo SAD | [Duyệt] |
+| 1.0.0 | 2026-06-22 | [Tác giả] | Tạo mới theo `STD-DOC-v1.12`; template đầu mục theo SAD | [Duyệt] |
 | 1.1.0 | 2026-06-22 | [Tác giả] | Bỏ §3 "Các thành phần" (trùng bảng BC §2.2 — capability gom về §2.2; con trỏ Tech Spec ở Phụ lục A.4; Edge/Gateway nêu trong §2.2). Bỏ §6.2 ERD & §6.3 Schema (header rỗng — bất biến no-FK gộp vào §6.1, ERD/schema → Tech Spec). Đánh số lại §3–§10 cho liền mạch. | [Duyệt] |
+| 1.2.0 | 2026-06-24 | [Tác giả] | Theo `STD-DOC-v1.12` (R-E5/R-E6 — truy vết NFR): §7 đổi tiêu đề "**Yêu cầu chất lượng**" + thêm **§7.1 Quality tree / NFR catalog** (chỉ mục có ID, mỗi NFR có **satisfied-by** + **kiểu truy vết** + BC đích); §7.1–7.4 cũ dời thành §7.2–7.5. Phụ lục A.4 trỏ catalog làm bảng allocation NFR. | [Duyệt] |
+| 1.3.0 | 2026-06-24 | [Tác giả] | Theo `STD-DOC-v1.13` (R-E7): §7.1 thành **utility tree (ATAM)** — thêm **§7.1.1** sơ đồ cây (lá ưu tiên cao), **§7.1.2** catalog thêm cột **Ưu tiên (I×D)**, **§7.1.3** bốn **quality attribute scenario** 6 phần (QAS-PERF/FIN/AVAIL/SEC-01) với *phản hồi* nối tactic. §7.2 trỏ scenario formal về §7.1.3. | [Duyệt] |
+| 1.4.0 | 2026-06-24 | [Tác giả] | Theo `STD-DOC-v1.14` (R-F2/F6): tạo **tập ADR thật** [`docs/design/adr/`](adr/README.md) (7 file ADR-0001..0006/0012 + README) — trước chỉ có index. §A.2 **link tới file** + thêm cột **Decision Drivers (NFR)** (reverse-link design→NFR). | [Duyệt] |
+| 1.5.0 | 2026-06-24 | [Tác giả] | Theo `STD-DOC-v1.15` (R-E6/G25 — chống lặp target): **gỡ §7.2 Hiệu năng / §7.3 SLA / §7.4 Capacity / §7.5 Scaling** (lặp target catalog) → thay bằng **§7.2 "Cơ chế hiện thực (tactics — theo NFR)"** (chiều ngược tactic→NFR). §7 giờ uyển chuyển theo NFR: §7.1 tree/catalog/scenarios + §7.2 tactics. | [Duyệt] |
 
-> **Mô hình tài liệu (R-0 của `STD-DOC-v1.11`):** hệ thống có **đúng 01 AD này** + **01 Tech Spec / bounded context (BC)**, **không phụ thuộc số lượng BC**. AD giữ thứ ổn định (ranh giới giữa BC, liên kết, quyết định cấp hệ thống); chi tiết hiện thực (schema cột, field/mã lỗi, framework từng BC) **đẩy xuống** Tech Spec/contract. Bảng ánh xạ AD ↔ Tech Spec ở **Phụ lục A**.
+> **Mô hình tài liệu (R-0 của `STD-DOC-v1.12`):** hệ thống có **đúng 01 AD này** + **01 Tech Spec / bounded context (BC)**, **không phụ thuộc số lượng BC**. AD giữ thứ ổn định (ranh giới giữa BC, liên kết, quyết định cấp hệ thống); chi tiết hiện thực (schema cột, field/mã lỗi, framework từng BC) **đẩy xuống** Tech Spec/contract. Bảng ánh xạ AD ↔ Tech Spec ở **Phụ lục A**.
 
 ```mermaid
 flowchart TD
@@ -226,7 +230,7 @@ flowchart TB
 
 ## 2.3 DDD Context Map _(optional — áp dụng vì dự án dùng DDD)_
 
-> _Quy tắc (§6 của `STD-DOC-v1.11`):_ mục này **optional**; bắt buộc nếu team dùng DDD, bỏ được nếu không (chiều phụ thuộc đã có ở bảng §2.2). Nó thể hiện **hai lớp**: **(a) quan hệ cộng tác giữa các team sở hữu BC** (Conway's law — Customer–Supplier, Partnership, Conformist, Shared Kernel) và **(b) ngữ nghĩa tích hợp dữ liệu tại biên** (ACL, OHS, Published Language). §2.2 cho *topology + hợp đồng*; §2.3 cho *quan hệ đội + kiểu dịch dữ liệu*. U = upstream, D = downstream.
+> _Quy tắc (§6 của `STD-DOC-v1.12`):_ mục này **optional**; bắt buộc nếu team dùng DDD, bỏ được nếu không (chiều phụ thuộc đã có ở bảng §2.2). Nó thể hiện **hai lớp**: **(a) quan hệ cộng tác giữa các team sở hữu BC** (Conway's law — Customer–Supplier, Partnership, Conformist, Shared Kernel) và **(b) ngữ nghĩa tích hợp dữ liệu tại biên** (ACL, OHS, Published Language). §2.2 cho *topology + hợp đồng*; §2.3 cho *quan hệ đội + kiểu dịch dữ liệu*. U = upstream, D = downstream.
 
 ```mermaid
 flowchart LR
@@ -666,7 +670,7 @@ Bổ sung: CORS allowlist · CSRF cho state-changing · validate server-side (kh
 
 ## 6.5 Kiểm tra & Tuân thủ bảo mật
 
-> _Quy tắc (PHẦN F của `STD-DOC-v1.11`):_ AD ghi **invariant** + điểm cần **người review (gate)**. Cơ chế **thực thi tự động** (fitness function / policy-as-code trong CI) thuộc phạm vi **AaC** — tách riêng.
+> _Quy tắc (PHẦN F của `STD-DOC-v1.12`):_ AD ghi **invariant** + điểm cần **người review (gate)**. Cơ chế **thực thi tự động** (fitness function / policy-as-code trong CI) thuộc phạm vi **AaC** — tách riêng.
 
 **Invariant bảo mật cấp hệ thống** (theo mô hình microsegmentation §6, mặc định 1 BC = 1 segment; enforcement tự động → AaC, sau):
 
@@ -686,36 +690,87 @@ Bổ sung: CORS allowlist · CSRF cho state-changing · validate server-side (kh
 
 > ⚠️ **Target vs current (R-A10):** ZTA là hành trình nhiều giai đoạn. *Hiện trạng:* mTLS qua mesh + PEP tại Gateway đã có. *Đang triển khai:* PDP tập trung + per-request authz ở sidecar (GĐ2); SPIRE federation (GĐ3). Mỗi cột mốc ZTA = 1 thay đổi kiến trúc → 1 ADR riêng. Sơ đồ trên là kiến trúc **mục tiêu**.
 
-# 7. HIỆU NĂNG & KHẢ NĂNG MỞ RỘNG
+# 7. YÊU CẦU CHẤT LƯỢNG (QUALITY)
 
-## 7.1 Yêu cầu hiệu năng (quality requirements)
+## 7.1 Quality tree / NFR catalog (chỉ mục)
 
-| Metric | Target | Điều kiện |
+> _Quy tắc (R-E5 / R-E6 / R-E7):_ §7 tổ chức NFR thành **utility tree** (ATAM): *tiện ích → thuộc tính chất lượng → scenario lá*, mỗi lá gắn **ưu tiên (I×D)** = *tầm quan trọng nghiệp vụ × độ khó kỹ thuật* (H/M/L). **Catalog (§7.1.2) chính là tập lá** — chỉ mục, **không** thay chi tiết ở mục nhà (cơ chế §7.2, DR §8.3, bảo mật §6, observability §9, mục tiêu §1.1). Mỗi NFR có **ID ổn định** (Tech Spec trỏ ngược), **satisfied-by** = tactic + neo §/ADR (chỉ link, không chép — R-E5), **kiểu truy vết**:
+> `inherited` (mọi BC conform) · `allocated` (tách ngân sách, phải breakdown) · `owned` (1 BC) · `cross-BC` (AD-only, không BC đơn nào sở hữu) · `local` (chỉ ở Tech Spec — **không xuất hiện ở bảng này**). NFR **ưu tiên cao (H,H)** có **quality attribute scenario** ở §7.1.3.
+
+### 7.1.1 Utility tree (ATAM — chỉ lá ưu tiên cao)
+
+```mermaid
+flowchart LR
+    U["Tiện ích hệ thống<br/>(Utility)"]:::root
+    U --> PERF["Performance"]:::attr
+    U --> SCAL["Scalability"]:::attr
+    U --> AVAIL["Availability"]:::attr
+    U --> REC["Recoverability"]:::attr
+    U --> FIN["Financial integrity"]:::attr
+    U --> SEC["Security"]:::attr
+    PERF --> P1["Checkout P99 < 800ms @ 3.000 RPS<br/>(H,H) · NFR-PERF-01"]:::hi
+    SCAL --> S1["3.000 RPS sustained<br/>(H,H) · NFR-SCALE-01"]:::hi
+    AVAIL --> A1["Payment/Order 99.95%<br/>(H,H) · NFR-AVAIL-01"]:::hi
+    REC --> R1["Tier-1 RTO<1h / RPO<5min<br/>(H,H) · NFR-DR-01"]:::hi
+    FIN --> F1["0 lệch tiền · đối soát 100%<br/>(H,H) · NFR-FIN-01"]:::hi
+    SEC --> C1["default-deny · 0 cross-tenant<br/>(H,H) · NFR-SEC-01"]:::hi
+    classDef root fill:#1f3a5f,stroke:#4a90d9,color:#fff;
+    classDef attr fill:#2d4a3e,stroke:#5fb37a,color:#fff;
+    classDef hi fill:#5a2d2d,stroke:#d96f6f,color:#fff;
+```
+
+**Legend:** 🟦 tiện ích · 🟩 thuộc tính chất lượng · 🟥 lá scenario **ưu tiên cao (H,H)**. Cây chỉ hiện **lá ưu tiên cao** (R-E7/R-D12); danh sách đầy đủ ở §7.1.2. Tag `(I,D)` = *tầm quan trọng × độ khó*.
+
+### 7.1.2 NFR catalog (tập lá của cây)
+
+| ID | NFR (target) | Mục nhà | Satisfied-by (tactic → neo) | Kiểu | Ưu tiên (I×D) | BC đích / Tech Spec |
+| --- | --- | --- | --- | --- | --- | --- |
+| **NFR-PERF-01** | Checkout P99 < 800 ms | §7.2 · M5 | HPA (§2.4) · cache giá Redis (§7.2) · partition Kafka `merchant_id` (§7.2) · saga đồng bộ + **budget** · ADR-0002 | **allocated** | **(H,H)** | Checkout — breakdown ở `Checkout §2.1` |
+| **NFR-PERF-02** | Search P95 < 200 ms | §7.2 · M4 | search index ES · read replica Catalog (§7.2) | **owned** | (M,M) | Catalog |
+| **NFR-PERF-03** | API P99 (khác) < 500 ms | §7.2 | timeout mọi I/O (§8.2) · HPA (§2.4) | **inherited** | (M,L) | mọi BC |
+| **NFR-PERF-04** | Error rate < 0.1% | §7.2 | circuit breaker · retry + DLQ · graceful degradation (§8.2) | **inherited** | (H,M) | mọi BC |
+| **NFR-SCALE-01** | 3.000 RPS sustained | §7.2 · M5 | HPA stateless (§7.2) · partition Kafka · read replica | **allocated** | **(H,H)** | mọi BC (share RPS) |
+| **NFR-SCALE-02** | ≥ 10.000 Merchant | M1 | tenant isolation (§6.2) · DB-per-context (ADR-0001) | **cross-BC** | (M,M) | _no single owner_ |
+| **NFR-AVAIL-01** | Payment/Order 99.95% | §7.2 | multi-AZ (§2.4) · canary (§2.4.3) · idempotency money-op (§8.2) | **owned** | **(H,H)** | Payment, Order |
+| **NFR-AVAIL-02** | Checkout 99.9% | §7.2 | stateless + HPA · fail-safe degraded (§8.2) | **owned** | (H,M) | Checkout |
+| **NFR-AVAIL-03** | Catalog/Search 99.5% | §7.2 | read replica · cache fallback search (§8.2) | **owned** | (M,L) | Catalog |
+| **NFR-DR-01** | Tier-1 RTO<1h / RPO<5min | §8.3 | failover multi-AZ · hourly backup (§5.2.2) · WORM x-region (§8.3.2) | **owned** | **(H,H)** | Identity, Payment, Order |
+| **NFR-DR-02** | Tier-2 RTO<4h / RPO<1h | §8.3 | restore từ backup · rebuild stateless | **owned** | (M,M) | Checkout, Inventory |
+| **NFR-DR-03** | Tier-3 RTO<24h / RPO<4h | §8.3 | daily backup | **owned** | (L,L) | Catalog, Notification |
+| **NFR-FIN-01** | 0 lệch tiền · đối soát khớp 100% | M2 · §3.1.3 | escrow (ADR-0004) · idempotency money-op (§8.2) · WORM (ADR-0005) · reconcile + freeze payout (§9.4) | **cross-BC** | **(H,H)** | _no single owner_ (Payment chủ lực) |
+| **NFR-FIN-02** | Payout đúng hạn ≥ 99% · chứng từ bất biến | M3 · §5.2.3 | WORM Object Lock (ADR-0005) · payout retry + đối soát thủ công (§4.2) | **owned** | (H,M) | Payment |
+| **NFR-FIN-03** | Tách đơn chính xác 100% | M1 · §3.1.1 | OrderSplitter (Checkout) · 1 escrow/giỏ · idempotent saga | **cross-BC** | (H,M) | _no single owner_ (Checkout điều phối) |
+| **NFR-SEC-01** | mTLS xuyên segment · default-deny · PoLP (invariants §6.5) | §6 | ZTA mTLS/SVID · PDP/PEP · NetworkPolicy (ADR-0006) | **inherited** | **(H,H)** | mọi BC (anchor index ở mỗi Tech Spec) |
+| **NFR-SEC-02** | Tenant isolation (Merchant A ⊄ B) | §6.2 | `merchant_id` mọi query · authz PEP per-request | **inherited** | (H,M) | mọi BC |
+| **NFR-BIZ-01** | Duyệt sản phẩm < 24h | M4 · §1.1 | kiểm duyệt workflow Catalog | **owned** | (L,L) | Catalog |
+
+> **Đọc bảng:** `inherited` → Tech Spec **conform**, không restate (chỉ ghi "delta = none/khác"). `allocated` → Tech Spec nhận **phần ngân sách** + show breakdown (R-E6 compose-check). `owned` → ánh xạ 1:1 sang Tech Spec BC đó. `cross-BC` → **AD-only**, đừng coi là "thiếu ở Tech Spec". NFR `local` của từng BC (vd idempotency phiên Checkout) nằm ở Tech Spec §2, **không** đẩy lên đây.
+
+### 7.1.3 Quality attribute scenarios (NFR ưu tiên cao — R-E7)
+
+> Dạng **6 phần** (Bass/Clements/Kazman): *nguồn · kích thích · môi trường · phản hồi (kèm **tactic → neo**) · thước đo*. Cột **phản hồi** nối thẳng yếu tố thiết kế (R-E5); **thước đo** = target (R-E6). Chỉ viết cho lá **ưu tiên cao (H,H)** ở §7.1.1; scenario **chỉ trong một BC** → Tech Spec §2 của BC (vd QAS Checkout ở `Checkout §2`).
+
+| Scenario (thuộc tính) → NFR | Nguồn · Kích thích | Môi trường | Phản hồi (tactic → neo) | Thước đo |
+| --- | --- | --- | --- | --- |
+| **QAS-PERF-01** (Performance) → NFR-PERF-01 | Buyer · submit checkout giỏ nhiều Merchant | flash sale **3.000 RPS** | orchestrate saga đồng bộ; cache giá Redis + HPA + partition Kafka `merchant_id` (§2.4, §7.2); ngân sách per-hop (Checkout §2.1) | **P99 < 800 ms**; error < 0.1% |
+| **QAS-FIN-01** (Financial integrity) → NFR-FIN-01 | Cổng TT / settlement · webhook **trùng** hoặc settle đồng thời | vận hành + retry at-least-once | idempotency mọi money-op; escrow (ADR-0004); chứng từ WORM (ADR-0005); reconcile → **freeze payout** (§9.4) | **0 lệch tiền**; đối soát khớp 100% |
+| **QAS-AVAIL-01** (Availability) → NFR-AVAIL-01 | Hạ tầng · **mất 1 AZ** chứa Payment/Order | production multi-AZ | failover multi-AZ; canary; Payment Tier-1 cô lập (§2.4, §8.3) | **99.95%**; RTO < 1h / RPO < 5min |
+| **QAS-SEC-01** (Security) → NFR-SEC-01 | Workload bị xâm nhập (**assume breach**) · cố gọi service / tenant khác | lateral movement trong VPC | ZTA mTLS/SVID + PDP/PEP **deny-by-default** + NetworkPolicy + tenant scope (ADR-0006, §6) | chặn ở PEP; **0 truy cập xuyên tenant** |
+
+## 7.2 Cơ chế hiện thực chất lượng (tactics — theo NFR)
+
+> _Quy tắc (R-E5 / R-E6):_ mục này chỉ giữ **cơ chế/tactic** (phần *"how"*) — **không restate target** (mọi target, gồm SLA & RTO, sống **một chỗ** ở §7.1.2 catalog). Mỗi tactic nêu **NFR nó phục vụ** (chiều ngược của satisfied-by). Cơ chế thuộc concern khác (DR, bảo mật) ở mục nhà của chúng (§8.3, §6) — chỉ **trỏ tới**, không lặp. Sizing/version literal → IaC (R-C1).
+
+| Tactic / cơ chế | NFR phục vụ | Ghi chú / neo |
 | --- | --- | --- |
-| Checkout P99 | < 800 ms | Gồm orchestration nhiều BC |
-| Search P95 | < 200 ms | Catalog/ES |
-| API P99 (khác) | < 500 ms | Normal |
-| Error rate | < 0.1% | Normal |
+| **HPA** (autoscale CPU>70% / RPS; service **stateless**) | NFR-PERF-01, NFR-SCALE-01, NFR-AVAIL-02 | §2.4 deploy |
+| **Read replica** (Catalog — tách đọc/ghi) | NFR-PERF-02, NFR-SCALE-01, NFR-AVAIL-03 | — |
+| **Partition Kafka** theo `merchant_id` | NFR-SCALE-01, NFR-PERF-01 | ordering per merchant; ADR-0003 |
+| **Caching** — CDN (ảnh/sản phẩm) · Redis (phiên checkout, giá) · local (feature flags) | NFR-PERF-01, NFR-PERF-02 | phục vụ flash-sale (QAS-PERF-01) |
+| **Capacity headroom 3–5×** (ước từ DAU × đơn/user; Payment & Order tier-1) | NFR-SCALE-01, NFR-AVAIL-01 | sizing literal → IaC |
+| **Multi-AZ failover + backup + WORM x-region** | NFR-AVAIL-01, NFR-DR-01/02/03 | chi tiết ở **§8.3** (DR) — trỏ, không lặp |
 
-**Quality scenario (mẫu):** _Cao điểm flash sale 3.000 RPS_ → checkout P99 vẫn < 800 ms nhờ HPA + Redis cache giá + partition Kafka theo `merchant_id`. _Escrow lệch_ → alert P1 + freeze payout (đảm bảo M2: 0 lệch tiền).
-
-## 7.2 SLA
-
-Payment/Order 99.95% · Checkout 99.9% · Catalog/Search 99.5%.
-
-## 7.3 Capacity Planning
-
-Ước tính từ DAU × đơn/user; Payment & Order là tier-1. Headroom 3–5x.
-
-## 7.4 Chiến lược Scaling
-
-### 7.4.1 Horizontal
-
-K8s HPA (CPU>70%/RPS); stateless services; read replica cho Catalog; partition Kafka theo `merchant_id`.
-
-### 7.4.2 Caching
-
-CDN (ảnh/sản phẩm) · Redis (phiên checkout, giá) · local (feature flags).
+> **Vì sao bỏ các mục cố định *Hiệu năng / SLA / Capacity / Scaling*:** chúng từng **lặp lại target** đã có ở catalog (perf metrics ≡ `NFR-PERF-*`; SLA ≡ `NFR-AVAIL-*`). Theo nguyên tắc *một target một chỗ* (R-E6/G25): target ở §7.1.2, scenario ở §7.1.3, còn mục này chỉ giữ **cơ chế** — xuất hiện **theo NFR thực có**, không theo bucket template cứng.
 
 # 8. XỬ LÝ LỖI & KHẢ NĂNG PHỤC HỒI
 
@@ -784,24 +839,25 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 
 | Tài liệu | Mô tả | Link / Mã |
 | --- | --- | --- |
-| Quy tắc viết AD & Tech Spec | `STD-DOC-v1.11` | [docs/stds/QuyTac-AD-va-TechSpec.md](../stds/QuyTac-AD-va-TechSpec.md) |
+| Quy tắc viết AD & Tech Spec | `STD-DOC-v1.15` | [docs/stds/QuyTac-AD-va-TechSpec.md](../stds/QuyTac-AD-va-TechSpec.md) |
 | Tech Spec — Checkout | Thiết kế chi tiết orchestrator | [techspec/Checkout.md](techspec/Checkout.md) |
+| ADR cấp hệ thống (tập file) | Quyết định kiến trúc (Context→Decision→Consequences + Drivers) | [docs/design/adr/](adr/README.md) |
 | OpenAPI / proto / AsyncAPI | Hợp đồng API/event đầy đủ | [Link] |
 | (sau) AaC | Sinh view từ model, fitness function, pipeline | `docs/QuyTac-AD-ArchitectureAsCode.md` |
 
-### A.2 Chỉ mục ADR cấp hệ thống (R-A13 / PHẦN F)
+### A.2 Chỉ mục ADR cấp hệ thống (R-F2/F3/F6)
 
-> Quyết định ảnh hưởng nhiều BC → ADR cấp hệ thống. ADR nội bộ một BC → Tech Spec §6 của BC đó.
+> Quyết định ảnh hưởng nhiều BC → ADR cấp hệ thống. **File ADR thật ở [`docs/design/adr/`](adr/README.md)** — index này **link tới file** (R-F6). ADR nội bộ một BC → Tech Spec §7 của BC đó (vd [Checkout §7](techspec/Checkout.md)). Cột **Drivers** = NFR lái quyết định (neo §7.1.2 — reverse-link *design → NFR*).
 
-| ADR | Quyết định | Trạng thái | View/§ ảnh hưởng |
-| --- | --- | --- | --- |
-| ADR-0001 | DB-per-Context, không FK xuyên BC | Accepted | §2.2, §5 |
-| ADR-0002 | Orchestration (Checkout) cho luồng tiền | Accepted | §2.2, §3 |
-| ADR-0003 | Event-Driven qua Kafka; event là Published Language | Accepted | §2.3, §3.3 |
-| ADR-0004 | Escrow giữ tiền đến khi giao hàng hoàn tất | Accepted | §3, §5 |
-| ADR-0005 | Chứng từ tài chính WORM (S3 Object Lock) | Accepted | §5.2.3, §6.3 |
-| ADR-0006 | Zero-Trust (mTLS/SVID + PDP/PEP), nhiều giai đoạn | Proposed | §6 |
-| ADR-0012 | Bổ sung Dispute & Refund BC (lộ trình) | Proposed | §1.2.2 |
+| ADR | Quyết định | Trạng thái | Drivers (NFR) | View/§ ảnh hưởng |
+| --- | --- | --- | --- | --- |
+| [ADR-0001](adr/ADR-0001-db-per-context.md) | DB-per-Context, không FK xuyên BC | Accepted | NFR-SCALE-02, NFR-SEC-02 | §2.2, §5 |
+| [ADR-0002](adr/ADR-0002-orchestration-checkout.md) | Orchestration (Checkout) cho luồng tiền | Accepted | NFR-PERF-01, NFR-FIN-01/03 | §2.2, §3 |
+| [ADR-0003](adr/ADR-0003-event-driven-kafka.md) | Event-Driven qua Kafka; event là Published Language | Accepted | NFR-SCALE-01, NFR-AVAIL-01 | §2.3, §3.3 |
+| [ADR-0004](adr/ADR-0004-escrow.md) | Escrow giữ tiền đến khi giao hàng hoàn tất | Accepted | NFR-FIN-01 | §3, §5 |
+| [ADR-0005](adr/ADR-0005-worm-settlement-doc.md) | Chứng từ tài chính WORM (S3 Object Lock) | Accepted | NFR-FIN-02 | §5.2.3, §6.3 |
+| [ADR-0006](adr/ADR-0006-zero-trust.md) | Zero-Trust (mTLS/SVID + PDP/PEP), nhiều giai đoạn | Proposed | NFR-SEC-01, NFR-SEC-02 | §6 |
+| [ADR-0012](adr/ADR-0012-dispute-refund-bc.md) | Bổ sung Dispute & Refund BC (lộ trình) | Proposed | — | §1.2.2 |
 
 ### A.3 Correspondence — ánh xạ tầng view (R-B14 / §17)
 
@@ -827,6 +883,8 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 | Identity | §6 | `techspec/Identity.md` (TODO) |
 | Notification | §3.3 | `techspec/Notification.md` (TODO) |
 
+> **Allocation NFR (R-E6):** bảng truy vết NFR ↔ BC/Tech Spec do **§7.1.2 catalog** kiêm (cột *Kiểu* + *BC đích*) — không lặp lại ở đây. Mỗi Tech Spec §2 trỏ ngược bằng **AD-NFR-ID** (vd Checkout ↦ `NFR-PERF-01`/`NFR-AVAIL-02`/`NFR-DR-02`/`NFR-SCALE-01`) hoặc đánh dấu **"BC-local"**.
+
 ## B. Rủi ro & Nợ kỹ thuật (R-A14)
 
 | # | Rủi ro / nợ | Tác động | Biện pháp |
@@ -841,7 +899,7 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 
 **Bounded Context (BC)** — ranh giới mô hình hóa của một miền nghiệp vụ. **Escrow** — giữ tiền trung gian đến khi đơn hoàn tất. **Settlement** — đối soát. **Payout** — chi trả Merchant. **WORM** — Write Once Read Many (bất biến). **Saga** — chuỗi giao dịch phân tán + compensation. **Tenant isolation** — cô lập dữ liệu theo Merchant. **OHS/PL/ACL** — Open Host Service / Published Language / Anti-Corruption Layer (DDD). **mTLS/SVID** — mutual TLS / SPIFFE Verifiable Identity Document. **PDP/PEP** — Policy Decision/Enforcement Point. **PII** — Personally Identifiable Information.
 
-## D. Checklist Definition-of-Done cho AD (PHẦN H của `STD-DOC-v1.11`)
+## D. Checklist Definition-of-Done cho AD (PHẦN H của `STD-DOC-v1.12`)
 
 | # | Hạng mục | ✓ |
 | --- | --- | --- |
@@ -853,10 +911,12 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 | 6 | §4 hợp đồng nêu capability + đảm bảo, trỏ tới contract artifact (R-C6/C7) | ☑ |
 | 7 | Phụ lục A.3/A.4 correspondence Context↔Container↔Deployment & AD↔Tech Spec | ☑ |
 | 8 | Sơ đồ là Mermaid, đúng grain, có legend, nhãn = ý định (không method name) | ☑ |
-| 9 | Quyết định nặng cấp hệ thống có ADR; chỉ mục ở A.2 | ☑ |
+| 9 | Quyết định nặng cấp hệ thống có **file ADR thật** ([`adr/`](adr/README.md)) + **Decision Drivers**; chỉ mục A.2 link tới file (R-F2/F6) | ☑ |
 | 10 | `TBD` đánh dấu tường minh (§1.4.2, §5.2.3, §6.3) | ☑ |
 | 11 | Mục Optional không dùng ghi "N/A — lý do" (§10 AI Security) | ☑ |
 | 12 | Version + changelog cập nhật | ☑ |
+| 13 | §7.1 NFR catalog có ID; mỗi NFR có **satisfied-by** + **kiểu truy vết & BC đích** (R-E5/E6); allocated có breakdown (Checkout §2.1); cross-BC đánh dấu "no single owner" | ☑ |
+| 14 | §7.1 là **utility tree**: §7.1.1 sơ đồ cây (lá ưu tiên cao), §7.1.2 catalog có cột **Ưu tiên (I×D)**, §7.1.3 **quality attribute scenario** 6 phần cho NFR (H,H) — phản hồi nối tactic (R-E7) | ☑ |
 
 ## E. PHÊ DUYỆT TÀI LIỆU
 

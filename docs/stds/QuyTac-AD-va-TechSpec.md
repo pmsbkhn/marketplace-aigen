@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Mã | `STD-DOC-v1.11` |
+| Mã | `STD-DOC-v1.15` |
 | Trạng thái | Draft for review |
 | Phạm vi | Tài liệu kiến trúc cấp hệ thống (**AD**) và tài liệu thiết kế chi tiết cấp bounded context (**Tech Spec**) |
 | Neo chuẩn | ISO/IEC/IEEE 42010:2022 · arc42 · C4 model · ADR (Nygard/MADR) · DDD Context Mapping |
@@ -27,6 +27,10 @@
 | v1.9 | Thêm **R-D13 (sơ đồ ngữ cảnh BC)**: Tech Spec §1 *được phép* (optional) vẽ **BC-context diagram** — BC ở giữa + actor/BC láng giềng, nhãn = ý định+protocol, **boundary-level** (không module nội bộ). Là **zoom tập trung** từ AD §2.2, không vẽ lại toàn hệ; trỏ AD §2.2 + dùng cùng nhãn (R-D8); bỏ qua nếu BC chỉ 1–2 láng giềng (R-D7). |
 | v1.10 | Thêm **R-B1 (Module view lộ rõ kiến trúc nội bộ)**: §3.1 phải thể hiện **kiểu kiến trúc nội bộ + quy tắc phụ thuộc** (vd Hexagonal/Clean/Onion: domain ← application ← adapter; **ports & adapters**; dependency hướng **vào trong**; adapter *implements* ports.out — DIP) và **đặt tên theo convention dự án**. Khuyến nghị kèm **chữ ký ports.in/ports.out** (biên hexagon) ở mức signature. |
 | v1.11 | Thêm **R-B2 (module hóa theo tính năng — trục dọc)**: §3.1 phải thể hiện **cả hai trục** — *ngang* (tầng, R-B1) **và** *dọc* (**package-by-feature / vertical slice**): mỗi slice cohesion cao, coupling thấp, cắt dọc qua các tầng. BC chỉ 1 feature → **nêu rõ**, không im lặng bỏ trục dọc. Thêm tính năng = thêm slice mới, không phình slice cũ. |
+| v1.12 | **Truy vết NFR (lấp 2 lỗ hổng):** thêm **R-E5 (NFR satisfied-by)** — mỗi quality requirement phải nêu **cơ chế/tactic thiết kế hiện thực + neo §/ADR**, không chỉ target; và **R-E6 (truy vết NFR dọc AD↔Tech Spec)** — mỗi NFR gắn **kiểu quan hệ** {inherited / allocated / owned / cross-BC / local}, hai phía được phép có NFR **không ánh xạ** nhưng **phải đánh dấu**; NFR *allocated* cần **breakdown ngân sách** compose-check. Thêm **§13 Quality tree / NFR catalog** làm **chỉ mục có ID** (chi tiết vẫn ở mục nhà). Anti-pattern **G21/G22**; cập nhật checklist **H.1/H.2** & bảng ánh xạ chuẩn. _(Khái quát hóa pattern "anchor index" của Security đã có sẵn thành quy tắc chung cho mọi NFR.)_ |
+| v1.13 | Thêm **R-E7 (Utility tree + Quality Attribute Scenario)**: §13 tổ chức NFR thành **utility tree** (ATAM) — *tiện ích → thuộc tính → scenario lá* + **ưu tiên (tầm quan trọng × độ khó)**; mỗi NFR ưu tiên cao có **scenario 6 phần** (Bass/Clements/Kazman) với *phản hồi* nối thẳng tactic (R-E5). Catalog (R-E6) = tập **lá** của cây. Thêm dòng D.1 (vẽ utility tree bằng `flowchart`), **G23**, checklist **H.1 #14 / H.2 #11**. |
+| v1.14 | **Tập ADR phải có file thật, không chỉ index:** siết **R-F2** (thư mục `docs/design/adr/`, tên `ADR-XXXX-<slug>.md`, thêm trường **Decision Drivers** = NFR lái quyết định) + thêm **R-F6** (index ở AD §14/Tech Spec §7 **phải link tới file**; folder có README). Thêm **template ADR** (F.1), **G24**, checklist **H.1 #15**. Khép vòng truy vết *design → NFR* (bổ trợ R-E5). |
+| v1.15 | **Chống lặp target — §13 tổ chức theo NFR, không bucket cố định:** thêm bullet R-E6 (*target một chỗ* = catalog; mục nhà chỉ giữ *cơ chế/scenario*, bỏ mục chỉ chép lại target) + **G25**. Hệ quả demo: AD bỏ 4 mục cố định §7.2–7.5 (Hiệu năng/SLA/Capacity/Scaling) → một mục **tactic→NFR** uyển chuyển. |
 
 ---
 
@@ -103,11 +107,11 @@ flowchart TD
 | 10 | **Data architecture** | Quyền sở hữu dữ liệu theo BC (**view sở hữu logic** — *chỗ duy nhất* nêu BC nào sở hữu dữ liệu gì) + **năng lực lưu trữ cần** ghi capability-first `năng lực (sản phẩm)` (R-A23/R-C11); ranh giới, phân loại & retention, bất biến (vd no-FK xuyên BC) | view, aspect | 8 | — | Schema cột, ERD chi tiết, DDL, **tên DB/instance vật lý** |
 | 11 | **Security architecture** | Trust boundary, authn/authz mô hình, mã hóa, Zero-Trust. **PEP ở cổng vào mỗi microsegment** (biên + segment; mặc định 1 BC = 1 segment — R-A24); đơn vị enforce = **workload**. Vẽ **pattern view** (mẫu đại diện, R-D12) | aspect, perspective | 8 | — | IAM policy literal, rule cụ thể |
 | 12 | **Cross-cutting concepts** | Idempotency, tracing/correlation, error model, i18n, time/clock… (nguyên tắc hệ thống) | aspect | 8 | — | Thư viện/middleware cụ thể |
-| 13 | **Quality requirements** | Quality tree + kịch bản chất lượng (link mục tiêu §1) | concern, aspect | 10 | — | — |
-| 14 | **Architecture decisions** | Tóm tắt/chỉ mục các ADR cấp hệ thống + rationale | architecture decision, rationale | 9 | — | ADR riêng của BC |
+| 13 | **Quality requirements** | **Utility tree** (tiện ích → thuộc tính → scenario lá + ưu tiên I×D, R-E7) + **NFR catalog có ID** (chỉ mục = tập lá; chi tiết ở mục nhà) + **quality attribute scenario** 6 phần cho NFR ưu tiên cao; mỗi NFR có **satisfied-by** (tactic → §/ADR, R-E5) + **kiểu truy vết & BC đích** (R-E6) | concern, aspect, correspondence | 10 | — | — |
+| 14 | **Architecture decisions** | **Chỉ mục link tới file ADR** (`docs/design/adr/`) + **Decision Drivers (NFR)** + rationale (R-F2/F6) | architecture decision, rationale | 9 | — | ADR riêng của BC |
 | 15 | **Risks & technical debt** | Rủi ro/nợ kỹ thuật cấp hệ thống + biện pháp | concern | 11 | — | — |
 | 16 | **Hợp đồng giao tiếp (tham chiếu)** | Interface/event giữa BC ở mức *capability + đảm bảo*; trỏ tới OpenAPI/AsyncAPI | view component, correspondence | 3/5 | — | Field/method/mã lỗi đầy đủ |
-| 17 | **Correspondence / Traceability** | Bảng ánh xạ Context ↔ Container ↔ Deployment, và AD ↔ từng Tech Spec | correspondence, method | xuyên suốt | — | — |
+| 17 | **Correspondence / Traceability** | Bảng ánh xạ Context ↔ Container ↔ Deployment, AD ↔ từng Tech Spec, và **allocation NFR** (AD-NFR ↔ BC/Tech Spec, R-E6 — có thể để §13 catalog kiêm) | correspondence, method | xuyên suốt | — | — |
 | 18 | **Glossary** | Thuật ngữ nghiệp vụ & kỹ thuật dùng chung | — | 12 | — | — |
 
 ### A.2 Lưu ý nội dung từng mục AD
@@ -147,7 +151,7 @@ flowchart TD
 | § | Mục Tech Spec | Thể hiện thông tin gì | View / chuẩn | Không thuộc Tech Spec (ở AD/contract) |
 | --- | --- | --- | --- | --- |
 | 1 | **Context & Scope** | Vai trò BC trong hệ thống; upstream/downstream; in/out scope của BC. *Optional:* **sơ đồ ngữ cảnh BC** (BC ở giữa + láng giềng — R-D13) | bối cảnh (arc42 §3) | Bức tranh toàn hệ thống |
-| 2 | **Requirements (tóm tắt)** | FR/NFR chính của BC; trỏ backlog cho bản đầy đủ | concern | Toàn bộ backlog |
+| 2 | **Requirements (tóm tắt)** | FR/NFR chính của BC; trỏ backlog cho bản đầy đủ. Mỗi NFR gắn **parent AD-NFR-ID** hoặc đánh dấu **"BC-local"** (R-E6) + **satisfied-by** (R-E5); **quality attribute scenario** cấp BC cho NFR ưu tiên cao, dẫn nguồn utility tree AD (R-E7) | concern, correspondence | Toàn bộ backlog |
 | 3 | **Design overview** | Tổng quan thiết kế BC, gồm 3 view dưới | — | — |
 | 3.1 | — Module view | Cấu trúc tĩnh **2 trục**: *ngang* = tầng + quy tắc phụ thuộc (Hexagonal/Clean, ports & adapters — R-B1); *dọc* = **module hóa theo tính năng** (package-by-feature / vertical slice — R-B2); chữ ký ports.in/ports.out | C4 L3 / arc42 §5 | — |
 | 3.2 | — C&C view | Cấu trúc runtime: component, process, hàng đợi, tương tác | C4 L3 (dynamic) / arc42 §6 | — |
@@ -234,6 +238,7 @@ flowchart TD
 | State machine (Tech Spec §5) | — | `stateDiagram-v2` | Vòng đời aggregate (vd Order) |
 | Deployment (AD §9, Tech Spec §3.3) | deployment | `flowchart` lồng `subgraph` theo node/**platform** | Node = subgraph; **nhóm theo ranh giới hạ tầng** nếu đa nền tảng (R-A25). Công nghệ ghi **rule/pattern**, không literal (R-C10) |
 | Data ownership (AD §10) | — | `flowchart` | BC ↔ datastore sở hữu |
+| **Utility tree** (AD §13) | — | `flowchart` | Tiện ích → thuộc tính → **lá scenario ưu tiên cao** + tag (I,D); chỉ hiện lá ưu tiên cao, đầy đủ ở catalog (R-E7) |
 | ERD chi tiết (Tech Spec §4) | — | `erDiagram` | Chỉ ở Tech Spec, không ở AD |
 
 > Mermaid hỗ trợ cú pháp C4 (`C4Context`/`C4Container`/`C4Component`/`C4Deployment`/`C4Dynamic`). Nếu render chưa ổn định, dùng `flowchart`/`sequenceDiagram` tương đương — ưu tiên đọc được và đúng grain hơn là đúng tên cú pháp.
@@ -339,6 +344,33 @@ flowchart TD
 - **R-E3 — Mỗi Tech Spec trỏ ngược về AD:** §1 Context & Scope của Tech Spec nêu rõ BC này là hộp nào trong AD §6, upstream/downstream là BC nào.
 - **R-E4 — Versioning:** mỗi tài liệu có version + changelog; thay đổi nặng-kiến-trúc bump version và gắn ADR. Tài liệu sống cạnh code, review qua PR.
 
+### E.1 Truy vết NFR (yêu cầu chất lượng)
+
+> NFR sống ở **hai cấp** — kiến trúc (AD) và chi tiết (Tech Spec) — nên dễ rơi vào **hai lỗ hổng**: (a) target trần, không biết *thiết kế nào giải quyết*; (b) NFR hai cấp **không ánh xạ** với nhau. R-E5/R-E6 lấp hai lỗ này. Pattern đã có sẵn cho riêng Security (anchor index AD §11 ↦ Tech Spec) — hai quy tắc dưới **khái quát hóa** nó cho **mọi họ NFR**.
+
+- **R-E5 — NFR "satisfied-by" (NFR → yếu tố thiết kế):** mỗi *quality requirement* (AD §13 và Tech Spec §2) **không chỉ nêu target** mà phải nêu **cơ chế/tactic kiến trúc hiện thực nó** + **neo tới view/§/ADR sở hữu cơ chế đó**. Theo tinh thần **R-D8 (DRY)**: **không chép** cơ chế vào hàng NFR — chỉ *link* tới chỗ sở hữu. Khuôn mẫu = kịch bản chất lượng: *stimulus → response measure (target) → tactic → anchor (§/ADR)*. NFR nêu target trần, không có satisfied-by → **chưa Done** (G21).
+  - ✅ Ví dụ: `Checkout P99 < 800 ms` ⟵ HPA · cache giá (Redis) · partition Kafka theo `merchant_id` · saga đồng bộ (budget) — neo §9/§13/ADR-0002. `0 lệch tiền (M2)` ⟵ escrow (ADR-0004) · idempotency mọi money-op (§12) · WORM (ADR-0005) · reconcile + freeze payout (§9 alert).
+  - ❌ Sai: bảng NFR chỉ có cột *Metric | Target* mà không có cột/neo *satisfied-by*.
+
+- **R-E6 — Truy vết NFR dọc (AD ↔ Tech Spec):** NFR ở hai cấp **phải ánh xạ tường minh**, kèm **đánh dấu cái không ánh xạ được** (không im lặng). Mỗi NFR gắn **một kiểu quan hệ truy vết**:
+
+  | Kiểu | Ý nghĩa | Hướng ánh xạ | Ghi ở đâu |
+  | --- | --- | --- | --- |
+  | **inherited** (kế thừa toàn hệ) | Chính sách AD áp **đồng nhất** mọi BC | AD → mọi BC; Tech Spec **conform**, không restate | AD §13 + Tech Spec §6/§7 ("delta = none") |
+  | **allocated** (phân bổ/ngân sách) | Target hệ thống **tách thành sub-target**; hợp lại phải thỏa parent | AD 1 → N; **bắt buộc breakdown** | AD §13 (bảng ngân sách) + Tech Spec §2 (phần của BC) |
+  | **owned** (một BC sở hữu) | NFR hệ thống hiện thực chủ yếu bởi **1 BC** | AD 1 ↔ Tech Spec 1 | AD §13 ↦ Tech Spec §2 |
+  | **cross-BC** (emergent) | Thuộc tính end-to-end **không BC đơn nào sở hữu** | **AD-only**, không có hàng Tech Spec | AD §13, đánh dấu *"no single owner"* |
+  | **local** (BC-local) | NFR nội bộ BC **không nổi lên AD** | **Tech Spec-only**, không có parent | Tech Spec §2, đánh dấu *"BC-local"* |
+
+  - **AD §13 catalog (hoặc §17)** liệt kê mỗi NFR hệ thống + **ID** + kiểu + BC đích; **Tech Spec §2** mỗi NFR ghi **parent AD-NFR-ID** hoặc **"BC-local"**. Hai phía **được phép** có NFR không ánh xạ (cross-BC ở AD; local ở Tech Spec) nhưng **phải đánh dấu** — lẫn *cross-BC* với *"thiếu ở Tech Spec"* là lỗi truy vết (G22).
+  - **allocated cần compose-check:** khi NFR phân bổ (ngân sách độ trễ, share RPS…), AD/Tech Spec phải show breakdown để kiểm *"tổng/biên các phần ⟹ thỏa parent"*. Ví dụ kinh điển: P99 800 ms ≈ pricing + reserve + order + escrow + overhead; nếu `grpc_timeout × số hop tuần tự ≫ budget` thì mâu thuẫn lộ ra ngay — đúng giá trị của việc ánh xạ.
+  - **Không nhân đôi target — tổ chức §13 theo NFR, không theo bucket cố định:** *target* (số đo, gồm SLA/RTO) sống **một chỗ** = catalog (§13). **Không** tạo mục chất lượng cố định (Hiệu năng / SLA / Capacity / Scaling…) chỉ để **chép lại** target; mục nhà chỉ giữ *cơ chế/tactic* (chiều ngược tactic→NFR) và *scenario*. Mục nào không thêm gì ngoài target đã có ở catalog thì **bỏ** (G25). §13 nở/co **theo NFR thực có**, không theo template cứng.
+
+- **R-E7 — Utility tree + Quality Attribute Scenario (cách trình bày NFR↔thiết kế):** AD §13 tổ chức NFR thành **utility tree** (ATAM): `tiện ích → thuộc tính chất lượng (Performance / Availability / Security / Recoverability / Financial-integrity / Scalability…) → refinement → scenario lá`. Mỗi lá gắn **ưu tiên** = cặp *(tầm quan trọng nghiệp vụ × độ khó kỹ thuật)* — H/M/L. **NFR catalog (R-E6) chính là tập lá** của cây — không dựng cây tách rời, không file riêng (R-0/G2).
+  - **Scenario 6 phần** cho NFR ưu tiên cao (≥ một trục H; ưu tiên (H,H)/(H,M)): *(1) nguồn kích thích · (2) kích thích · (3) đối tượng · (4) môi trường · (5) phản hồi — kèm **tactic + neo §/ADR** · (6) thước đo phản hồi* (Bass/Clements/Kazman). Phần **(5) phản hồi** nối thẳng vào yếu tố thiết kế (R-E5); **(6) thước đo** = target (R-E6). NFR ưu tiên thấp: chỉ cần dòng catalog, **không** ép scenario (tránh nhiễu).
+  - **Phân tầng:** scenario **xuyên BC / cấp hệ thống** → AD §13 (ở mục nhà của thuộc tính); scenario **chỉ trong một BC** → Tech Spec §2, **dẫn nguồn** về utility tree AD (R-E3). Utility tree luôn **một cây ở AD**.
+  - **Sơ đồ:** vẽ utility tree bằng `flowchart` (D.1) nhưng chỉ hiện **lá ưu tiên cao** + tag (I,D) — danh sách đầy đủ ở catalog (tinh thần "mẫu đại diện" R-D12, tránh O(N) lá rối).
+
 ---
 
 ## PHẦN F — QUYẾT ĐỊNH KIẾN TRÚC (ADR)
@@ -346,10 +378,35 @@ flowchart TD
 > Giữ gọn ở mức "ghi & truy vết". Cơ chế *thực thi tự động* quyết định (fitness function) thuộc phạm vi AaC — tách riêng.
 
 - **R-F1 — Mọi quyết định nặng-kiến-trúc → 1 ADR:** quan trọng / đắt / khó đảo / rủi ro / quy mô lớn (tiêu chí arc42 §9).
-- **R-F2 — Format chuẩn:** *Context → Decision → Status → Consequences* (Nygard) hoặc MADR; mỗi ADR một file, đánh số, **bất biến**.
+- **R-F2 — Format & lưu trữ chuẩn:** mỗi ADR = **một file bất biến, đánh số** theo *Context → Decision → Status → Consequences* (Nygard) hoặc **MADR**; **bắt buộc** trường **Decision Drivers** = NFR lái quyết định (neo về catalog AD §13 — khép vòng truy vết *design → NFR*, bổ trợ R-E5). **Tập ADR cấp hệ thống** đặt ở `docs/design/adr/`, tên `ADR-XXXX-<slug>.md`. ADR cấp BC đặt ở thư mục adr của BC (`…/techspec/<bc>/adr/`) **hoặc** inline Tech Spec §7 nếu ít/ngắn — **nêu rõ** chọn cách nào.
 - **R-F3 — Phạm vi ADR theo tầng:** quyết định ảnh hưởng nhiều BC → ADR cấp hệ thống, chỉ mục ở AD §14. Quyết định nội bộ một BC → ADR của BC, nêu ở Tech Spec §7.
-- **R-F4 — Vòng đời trạng thái:** `Proposed → Accepted → Superseded by ADR-xxx`. Đánh dấu superseded, không xóa ADR cũ.
+- **R-F4 — Vòng đời trạng thái:** `Proposed → Accepted → Superseded by ADR-xxx`. Đánh dấu superseded, **giữ nguyên file** ADR cũ (không xóa) + con trỏ tới ADR thay thế.
 - **R-F5 — Liên kết ADR ↔ view:** mỗi ADR nặng nên trỏ tới view/mục bị ảnh hưởng trong AD hoặc Tech Spec.
+- **R-F6 — Tập ADR phải tồn tại, không chỉ là chỉ mục:** chỉ mục ADR ở AD §14/§A.2 (hệ thống) và Tech Spec §7 (BC) **phải link tới file ADR thật** — index trỏ tới ADR không có file = nợ tài liệu (G24). Mỗi hàng index gồm: **ADR-id (link)**, quyết định, trạng thái, **Decision Drivers (NFR)**. Thư mục adr nên có `README` nêu convention + lifecycle.
+
+### F.1 Template ADR (MADR rút gọn)
+
+```markdown
+# ADR-XXXX — <tiêu đề quyết định>
+
+| | |
+| --- | --- |
+| Trạng thái | Proposed / Accepted / Superseded by ADR-YYYY |
+| Ngày | YYYY-MM-DD |
+| Phạm vi | Hệ thống (xuyên BC) / BC <tên> |
+| Decision Drivers (NFR) | NFR-XXX-01, NFR-YYY-02 … (neo AD §13) |
+| View/§ ảnh hưởng | AD §… / Tech Spec §… |
+
+## Context
+<vì sao cần quyết định — lực đẩy, ràng buộc>
+
+## Decision
+<chốt cái gì>
+
+## Consequences
+- (+) <hệ quả tốt>
+- (−) <đánh đổi / nợ phát sinh>
+```
 
 ---
 
@@ -379,6 +436,11 @@ flowchart TD
 | G18 | Segment-gateway nhưng chỉ vẽ ingress, thiếu egress đại diện | Thiếu kiểm soát outbound/PoLP phía caller; vi phạm R-A24(b) |
 | G19 | Module view phẳng "một rổ", không lộ tầng/ports/quy tắc phụ thuộc | Mất tinh thần Hexagonal/Clean; vi phạm R-B1 |
 | G20 | Module view chỉ có trục ngang (tầng), thiếu trục dọc (feature slices) | Giấu cohesion/coupling theo tính năng; vi phạm R-B2 |
+| G21 | NFR nêu **target trần**, không có **satisfied-by** (tactic + neo §/ADR) | Không truy được "thiết kế nào giải quyết"; vi phạm R-E5 |
+| G22 | Restate NFR hệ thống ở Tech Spec **không tag** parent/local; hoặc NFR không ánh xạ mà **không đánh dấu** (lẫn cross-BC với "thiếu") | Mất truy vết dọc; vi phạm R-E6 |
+| G23 | NFR liệt kê **phẳng** không gom theo thuộc tính / không xếp **ưu tiên**; hoặc NFR ưu tiên cao **thiếu quality attribute scenario** | Không biết cái gì đáng phân tích sâu, NFR không kiểm chứng được; vi phạm R-E7 |
+| G24 | Chỉ có **bảng index ADR** mà **không có file ADR thật**; hoặc ADR thiếu **Decision Drivers** (không biết NFR nào lái) | Mất truy vết quyết định + reverse-link design→NFR; vi phạm R-F2/R-F6 |
+| G25 | Mục chất lượng **cố định** (Hiệu năng/SLA/Capacity/Scaling…) **lặp lại target** đã có ở catalog §13 | Trùng & lệch khi đổi; *target một chỗ* — vi phạm R-E6 |
 
 ---
 
@@ -397,9 +459,12 @@ flowchart TD
 | 7 | §16 hợp đồng nêu capability + đảm bảo, trỏ tới contract artifact (R-C6/C7) | ☐ |
 | 8 | §17 bảng correspondence Context↔Container↔Deployment & AD↔Tech Spec (R-E2) | ☐ |
 | 9 | Sơ đồ là Mermaid, đúng grain, có legend, nhãn = ý định (PHẦN D) | ☐ |
-| 10 | Quyết định nặng cấp hệ thống có ADR; chỉ mục ở §14 (R-F1/F3) | ☐ |
+| 10 | Quyết định nặng cấp hệ thống có **file ADR thật** (`docs/design/adr/`), không chỉ index; chỉ mục §14 link tới file (R-F1/F3/F6) | ☐ |
 | 11 | `TBD` đánh dấu tường minh + issue/ADR theo dõi (R-C5) | ☐ |
 | 12 | Version + changelog cập nhật (R-E4) | ☐ |
+| 13 | §13 **Quality catalog** có ID; mỗi NFR có **satisfied-by** (tactic→§/ADR, R-E5) + **kiểu truy vết & BC đích** (R-E6); NFR *allocated* có breakdown ngân sách; NFR *cross-BC* đánh dấu "no single owner" | ☐ |
+| 14 | §13 tổ chức **utility tree** (gom theo thuộc tính + ưu tiên I×D); mỗi NFR **ưu tiên cao** có **quality attribute scenario** 6 phần (phản hồi nối tactic + neo §/ADR) (R-E7) | ☐ |
+| 15 | Mỗi ADR có trường **Decision Drivers (NFR)**; lifecycle Proposed→Accepted→Superseded giữ file cũ (R-F2/F4) | ☐ |
 
 ### H.2 Cho mỗi tài liệu Tech Spec
 
@@ -414,6 +479,8 @@ flowchart TD
 | 7 | Sơ đồ là Mermaid, đúng grain, có legend (PHẦN D) | ☐ |
 | 8 | ADR nội bộ BC nêu ở §7; quyết định xuyên BC để ở AD (R-F3) | ☐ |
 | 9 | §9 Open questions có người chịu trách nhiệm cho mỗi `TBD` | ☐ |
+| 10 | §2 mỗi NFR tag **parent AD-NFR-ID** hoặc **"BC-local"** (R-E6) + **satisfied-by** (R-E5); NFR *allocated* nêu phần ngân sách của BC | ☐ |
+| 11 | §2 có **quality attribute scenario** cấp BC cho NFR ưu tiên cao, **dẫn nguồn** utility tree AD §13 (R-E7) | ☐ |
 
 ---
 
@@ -431,7 +498,7 @@ flowchart TD
 | Deployment | view (deployment) | 7 | Deployment | AD §9 / Tech Spec §3.3 |
 | Module/Component (trong BC) | view, model kind | 5 | L3 Component | Tech Spec §3.1/3.2 |
 | Data / Security / Cross-cutting | aspect, perspective | 8 | — | AD §10–12 / Tech Spec §4,§7 |
-| Quality | concern, aspect | 10 | — | AD §13 |
+| Quality (utility tree + scenario + satisfied-by + truy vết dọc) | concern, aspect, correspondence | 10 | — | AD §13 ↔ Tech Spec §2 (R-E5/E6/E7) |
 | Decisions | architecture decision, rationale | 9 | — | AD §14 / Tech Spec §7 (ADR) |
 | Risks & debt | concern | 11 | — | AD §15 / Tech Spec §9 |
 | Interfaces & data chi tiết | view component | — | — | Tech Spec §4 + contract artifact |
