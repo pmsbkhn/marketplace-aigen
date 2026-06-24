@@ -1,6 +1,6 @@
 # ADR — Architecture Decision Records (cấp hệ thống)
 
-> Theo `STD-DOC-v1.14` PHẦN F: mỗi quyết định nặng-kiến-trúc = **một file ADR bất biến, đánh số** (R-F2). Đây là **tập ADR cấp hệ thống** (xuyên BC). ADR nội bộ một BC nằm ở Tech Spec §7 của BC đó (vd [Checkout §7](../techspec/Checkout.md)) — inline vì ít/ngắn (R-F2).
+> Theo `STD-DOC-v1.15` PHẦN F: mỗi quyết định nặng-kiến-trúc = **một file ADR bất biến, đánh số** (R-F2). Đây là **tập ADR cấp hệ thống** (xuyên BC). ADR nội bộ một BC nằm ở Tech Spec §7 của BC đó (vd [Checkout §7](../techspec/Checkout.md)) — inline vì ít/ngắn (R-F2).
 
 **Convention**
 

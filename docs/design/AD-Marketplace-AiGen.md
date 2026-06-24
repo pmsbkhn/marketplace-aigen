@@ -2,9 +2,9 @@
 
 | Thông tin tài liệu | Giá trị |
 | --- | --- |
-| Mã tài liệu | `AD-MKTPLACE-AIGEN-v1.5` |
+| Mã tài liệu | `AD-MKTPLACE-AIGEN-v1.7` |
 | Loại | **Architecture Document (AD)** — cấp hệ thống (**1 file / hệ thống**) |
-| Phiên bản | `1.5.0` |
+| Phiên bản | `1.7.0` |
 | Trạng thái | ☐ Draft for review |
 | Ngày tạo | 2026-06-22 |
 | Cập nhật lần cuối | 2026-06-24 |
@@ -25,8 +25,11 @@
 | 1.3.0 | 2026-06-24 | [Tác giả] | Theo `STD-DOC-v1.13` (R-E7): §7.1 thành **utility tree (ATAM)** — thêm **§7.1.1** sơ đồ cây (lá ưu tiên cao), **§7.1.2** catalog thêm cột **Ưu tiên (I×D)**, **§7.1.3** bốn **quality attribute scenario** 6 phần (QAS-PERF/FIN/AVAIL/SEC-01) với *phản hồi* nối tactic. §7.2 trỏ scenario formal về §7.1.3. | [Duyệt] |
 | 1.4.0 | 2026-06-24 | [Tác giả] | Theo `STD-DOC-v1.14` (R-F2/F6): tạo **tập ADR thật** [`docs/design/adr/`](adr/README.md) (7 file ADR-0001..0006/0012 + README) — trước chỉ có index. §A.2 **link tới file** + thêm cột **Decision Drivers (NFR)** (reverse-link design→NFR). | [Duyệt] |
 | 1.5.0 | 2026-06-24 | [Tác giả] | Theo `STD-DOC-v1.15` (R-E6/G25 — chống lặp target): **gỡ §7.2 Hiệu năng / §7.3 SLA / §7.4 Capacity / §7.5 Scaling** (lặp target catalog) → thay bằng **§7.2 "Cơ chế hiện thực (tactics — theo NFR)"** (chiều ngược tactic→NFR). §7 giờ uyển chuyển theo NFR: §7.1 tree/catalog/scenarios + §7.2 tactics. | [Duyệt] |
+| 1.5.1 | 2026-06-24 | [Tác giả] | Editorial: đồng bộ nhãn `STD-DOC` còn lệch về **v1.15** (checklist §D + 3 trích dẫn quy tắc inline R-0/§6/PHẦN F; đổi cùng nhịp ở [`adr/README`](adr/README.md)). Không đổi nội dung chuẩn — các dòng changelog lịch sử giữ nguyên version gốc. | [Duyệt] |
+| 1.7.0 | 2026-06-24 | [Tác giả] | (1) **Capability-first (R-C11):** §7.1.2/§7.1.3 bỏ tên sản phẩm trần ở satisfied-by/QAS (Redis→*cache giá nóng*, ES→*index toàn văn*, HPA→*autoscale stateless*, Kafka→*phân vùng event-log* + neo [ADR-0003](adr/ADR-0003-event-driven-kafka.md)); sản phẩm binding vẫn pin ở §2.1.1; thêm ghi chú quy ước. (2) **Bổ sung mô tả tường thuật** (đáp ứng "quá súc tích"): §1.1 thêm **bối cảnh nghiệp vụ** (tách đơn/escrow/vòng đời), §2.2 thêm **vai trò & trách nhiệm chi tiết 7 BC**, §7 thêm **diễn giải vì sao NFR ở mức ưu tiên đó**. | [Duyệt] |
+| 1.6.0 | 2026-06-24 | [Tác giả] | (1) **§7.1.3:** thêm **QAS-SCALE-01 + QAS-DR-01** → đủ QAS cho cả **6 lá (H,H)** ở §7.1.1 (gỡ orphan); QAS-AVAIL-01 bỏ trùng RTO/RPO (về QAS-DR-01). (2) **Link hoá** mọi `ADR-000x` trong §7.1.2/§7.1.3/§7.2 (R-F6/E5). (3) **Baseline + Delta:** tạo 4 baseline tổ chức `STD-SEC/RES/OBS/AISEC-v1.0` ([stds/Baseline-*](../stds/Baseline-Security.md)); **co §6/§8/§9/§10** về *"conform + delta"* (gỡ sơ đồ ZTA generic, pattern/error-model/observability mặc định); A.1 trỏ baseline (pin version). | [Duyệt] |
 
-> **Mô hình tài liệu (R-0 của `STD-DOC-v1.12`):** hệ thống có **đúng 01 AD này** + **01 Tech Spec / bounded context (BC)**, **không phụ thuộc số lượng BC**. AD giữ thứ ổn định (ranh giới giữa BC, liên kết, quyết định cấp hệ thống); chi tiết hiện thực (schema cột, field/mã lỗi, framework từng BC) **đẩy xuống** Tech Spec/contract. Bảng ánh xạ AD ↔ Tech Spec ở **Phụ lục A**.
+> **Mô hình tài liệu (R-0 của `STD-DOC-v1.15`):** hệ thống có **đúng 01 AD này** + **01 Tech Spec / bounded context (BC)**, **không phụ thuộc số lượng BC**. AD giữ thứ ổn định (ranh giới giữa BC, liên kết, quyết định cấp hệ thống); chi tiết hiện thực (schema cột, field/mã lỗi, framework từng BC) **đẩy xuống** Tech Spec/contract. Bảng ánh xạ AD ↔ Tech Spec ở **Phụ lục A**.
 
 ```mermaid
 flowchart TD
@@ -50,7 +53,15 @@ flowchart TD
 
 ## 1.1 Mục tiêu hệ thống
 
-Marketplace-AiGen là sàn TMĐT **multi-merchant**: một Buyer mua từ nhiều Merchant trong một phiên; hệ thống tự **tách đơn theo Merchant**, giữ tiền qua **escrow** đến khi giao hàng hoàn tất, rồi **đối soát & chi trả** tự động.
+Marketplace-AiGen là sàn TMĐT **multi-merchant** — một nền tảng trung gian nơi nhiều **Nhà bán hàng (Merchant)** độc lập cùng bán cho một tập **Người mua (Buyer)** chung, dưới một thương hiệu sàn và một quy trình thanh toán thống nhất.
+
+**Bài toán cốt lõi — mua chéo nhiều người bán trong một phiên.** Khác sàn một-người-bán, ở đây một Buyer có thể bỏ vào **một giỏ** các sản phẩm từ *nhiều* Merchant rồi thanh toán **một lần**. Hệ thống phải tự **tách giỏ thành N đơn theo Merchant** (mỗi Merchant một đơn để xử lý, giao hàng và đối soát độc lập) nhưng vẫn giữ cho Buyer trải nghiệm *một giao dịch*. Đây là nguồn gốc của phần lớn độ phức tạp: **một thao tác của người dùng nở ra thành nhiều giao dịch phân tán**, phải hoặc *cùng thành công, hoặc cùng được bù trừ* — không có trạng thái "nửa vời".
+
+**Mô hình tin cậy — escrow (ký quỹ).** Buyer và Merchant phần lớn là người lạ, không bên nào hoàn toàn tin bên kia. Sàn đứng giữa giữ tiền: khoản Buyer trả được **giữ trong escrow** (chưa chuyển cho Merchant) đến khi đơn **giao hàng hoàn tất**, rồi sàn mới **đối soát** (tính phí sàn/hoa hồng) và **chi trả (payout)** phần còn lại cho Merchant. Cơ chế này biến "lòng tin giữa hai người lạ" thành một **bất biến hệ thống kiểm chứng được** — và vì là *tiền thật*, nó kéo theo yêu cầu **toàn vẹn tài chính** gắt nhất (0 lệch tiền, chứng từ bất biến), là driver chi phối phần lớn thiết kế phía sau.
+
+**Vòng đời một giao dịch (end-to-end):** Buyer duyệt Catalog → thêm sản phẩm của nhiều Merchant vào giỏ → **checkout** (sàn lấy giá, giữ tồn kho, tách đơn, mở escrow) → Buyer trả tiền ở cổng → tiền vào escrow → Merchant giao hàng → đơn hoàn tất → đối soát → **payout** cho Merchant. Mỗi chặng thuộc một ranh giới nghiệp vụ (bounded context) khác nhau, nối nhau bằng *điều phối đồng bộ* (chặng liên quan tiền) và *sự kiện bất đồng bộ* (cập nhật trạng thái sau khi tiền đã an toàn).
+
+**Ba đặc tính nghiệp vụ → ba quyết định kiến trúc:** *tách đơn nguyên tử* → **Orchestration** (Checkout điều phối saga); *tiền thật giữ hộ* → **escrow + idempotency + cô lập** cho mọi thao tác tiền; *cao điểm flash-sale* → **Event-Driven + co giãn ngang**. Phần còn lại của tài liệu (§2 trở đi) chỉ là hệ quả kỹ thuật của ba sức ép này.
 
 | # | Mục tiêu | Mô tả | Quality goal (đo được) |
 | --- | --- | --- | --- |
@@ -226,11 +237,21 @@ flowchart TB
 | Payment | Escrow, đối soát, payout, chứng từ WORM | Cung cấp: init escrow (sync), webhook; `PaymentReceived` (event) · Tiêu thụ: `OrderCompleted` (event) |
 | Notification | Thông báo đa kênh (email/SMS) | Tiêu thụ: `PaymentReceived`, `OrderCompleted` & trạng thái đơn (event) |
 
+**Vai trò & trách nhiệm chi tiết từng BC** (vì sao mỗi BC tồn tại như một ranh giới riêng):
+
+- **Identity — cổng danh tính & tin cậy.** Sở hữu tài khoản và xác thực (OIDC/JWT cho người dùng), cấp **SVID** cho workload; là nguồn sự thật cho 3 vai trò (Buyer/Merchant/Admin) mà mọi BC khác dựa vào để phân quyền. Cố tình *không* chứa logic bán hàng — chỉ trả lời *"ai đang gọi, được phép làm gì"*.
+- **Catalog — nguồn sự thật sản phẩm.** Quản lý sản phẩm/biến thể/SKU, kiểm duyệt nội dung trước khi hiển thị, phục vụ tìm kiếm toàn văn. Là **upstream** cấp **giá snapshot** tin cậy cho Checkout (không bao giờ lấy giá từ client) và phát `ProductCreated` để Inventory dựng tồn kho. Đặc tính đọc-nhiều-ghi-ít → tách read replica.
+- **Inventory — người gác tồn kho.** Giữ số lượng tồn, thực hiện **reservation** (giữ chỗ tạm) khi checkout và **trừ kho vĩnh viễn** khi đơn hoàn tất. Bất biến then chốt: *không bán quá tồn*; reservation có TTL nên không để "giữ chỗ mồ côi" nếu checkout hỏng giữa chừng.
+- **Checkout — nhạc trưởng (orchestrator).** BC *gần stateless*, không sở hữu dữ liệu lâu bền; nhiệm vụ duy nhất là **điều phối saga đồng bộ**: lấy giá → giữ tồn → tách đơn theo Merchant → tạo N pending order → mở **1 escrow cho cả giỏ**. Bước nào hỏng → chạy **compensation ngược thứ tự**. Là điểm hội tụ độ phức tạp tách-đơn, nên cũng là điểm nhạy cảm nhất về độ trễ (P99) và blast-radius.
+- **Order (OMS) — sổ cái vòng đời đơn.** Sở hữu **state machine** từng đơn (pending → paid → … → completed/cancelled) và giữ **snapshot giá** tại thời điểm đặt. Nhận `PaymentReceived` để chuyển trạng thái, phát `OrderCompleted` để kích hoạt trừ kho + payout.
+- **Payment — két sắt của sàn.** BC nhạy cảm nhất: giữ **escrow**, xử lý **webhook** cổng thanh toán (idempotent), **đối soát**, **payout** cho Merchant, sinh **chứng từ tài chính bất biến (WORM)**. Là **Tier-1** (RTO<1h), egress hạn chế *chỉ* tới PG/Bank, mọi thao tác tiền đều idempotent + audit — cô lập riêng một microsegment để thu nhỏ blast-radius.
+- **Notification — loa thông báo.** Thuần *downstream*: lắng nghe sự kiện (`PaymentReceived`, `OrderCompleted`, đổi trạng thái) rồi gửi email/SMS. Không giữ trạng thái nghiệp vụ; lỗi ở đây **không được** làm hỏng luồng tiền (degrade độc lập).
+
 > **Edge — API Gateway / BFF (hạ tầng, không phải BC):** định tuyến · verify JWT · rate-limit & WAF · gắn tenant scope · TLS termination. Là **PEP biên** (cơ chế ở §6), không phải một bounded context.
 
 ## 2.3 DDD Context Map _(optional — áp dụng vì dự án dùng DDD)_
 
-> _Quy tắc (§6 của `STD-DOC-v1.12`):_ mục này **optional**; bắt buộc nếu team dùng DDD, bỏ được nếu không (chiều phụ thuộc đã có ở bảng §2.2). Nó thể hiện **hai lớp**: **(a) quan hệ cộng tác giữa các team sở hữu BC** (Conway's law — Customer–Supplier, Partnership, Conformist, Shared Kernel) và **(b) ngữ nghĩa tích hợp dữ liệu tại biên** (ACL, OHS, Published Language). §2.2 cho *topology + hợp đồng*; §2.3 cho *quan hệ đội + kiểu dịch dữ liệu*. U = upstream, D = downstream.
+> _Quy tắc (§6 của `STD-DOC-v1.15`):_ mục này **optional**; bắt buộc nếu team dùng DDD, bỏ được nếu không (chiều phụ thuộc đã có ở bảng §2.2). Nó thể hiện **hai lớp**: **(a) quan hệ cộng tác giữa các team sở hữu BC** (Conway's law — Customer–Supplier, Partnership, Conformist, Shared Kernel) và **(b) ngữ nghĩa tích hợp dữ liệu tại biên** (ACL, OHS, Published Language). §2.2 cho *topology + hợp đồng*; §2.3 cho *quan hệ đội + kiểu dịch dữ liệu*. U = upstream, D = downstream.
 
 ```mermaid
 flowchart LR
@@ -581,67 +602,15 @@ DB chính daily full + hourly incremental (Payment tier-1: RPO < 5 phút).
 
 # 6. KIẾN TRÚC BẢO MẬT
 
-> Hướng theo Zero-Trust (NIST SP 800-207). _Quy tắc (R-A10):_ AD nêu **mô hình** (trust boundary, authn/authz, mã hóa, ZTA target vs current); IAM policy literal, rule cụ thể → Tech Spec/policy.
+> **Conform `STD-SEC-v1.0`** — [Baseline-Security](../stds/Baseline-Security.md). Mô hình Zero-Trust (NIST 800-207), **3 kiểm tra độc lập/request** (JWT người dùng · SVID workload · PDP/PEP authz), **PEP mọi ranh giới**, mã hóa TLS 1.3 / mTLS / AES-256, **sơ đồ ZTA tham chiếu** + invariant chuẩn + bảng PEP — tất cả nằm ở baseline, **không lặp ở đây**. Mục này chỉ ghi **delta + quyết định đặc thù** Marketplace-AiGen. _Quy tắc (R-A10):_ AD nêu mô hình; IAM policy literal → Tech Spec/policy-as-code.
 
-> _Quy tắc (R-D12):_ đây là **pattern view** — vẽ *cơ chế* trên **mẫu đại diện** (1 hop: BC gọi → BC nhận), **không enumerate** mọi BC (vài chục BC sẽ rối O(N²)). Đơn vị enforce là **workload** (một BC có thể có nhiều workload), không phải BC. Cơ chế dưới đây **áp cho mọi BC và mọi hop**.
+## 6.1 Microsegmentation — quyết định của hệ thống (R-A24)
 
-```mermaid
-flowchart TB
-    User["User: Buyer/Merchant/Admin"]:::user
-    subgraph CP["CONTROL PLANE — ra quyết định"]
-        IdP["IdP — OIDC/JWT (danh tính NGƯỜI DÙNG)"]:::cp
-        SPIRE["SPIFFE/SPIRE — SVID (danh tính WORKLOAD)"]:::cp
-        PDP["PDP — policy authz (deny-by-default)"]:::cp
-        CA["Internal CA / cert rotation"]:::cp
-    end
-    subgraph DP["DATA PLANE — thực thi mỗi request · MẪU ĐẠI DIỆN, áp cho mọi BC/hop"]
-        GW["API Gateway — PEP biên · workload (SVID)<br/>verify JWT + tenant scope + authz user"]:::pep
-        subgraph BCa["BC A (caller) = 1 microsegment · 1..n workload"]
-            PEPa["PEP cổng vào segment — workload (SVID)<br/>verify SVID + authz s2s (PoLP)"]:::pep
-            WA["workload (SVID)"]:::wl
-            PEPa --> WA
-        end
-        subgraph BCb["BC B (callee) = 1 microsegment · 1..n workload"]
-            PEPb["PEP cổng vào segment — workload (SVID)<br/>verify SVID + authz s2s (PoLP)"]:::pep
-            WB["workload (SVID)"]:::wl
-            PEPb --> WB
-        end
-    end
-    User -->|"login"| IdP
-    User -->|"request + JWT"| GW
-    GW -.->|"authz?"| PDP
-    GW -->|"mTLS"| PEPa
-    WA -->|"gọi liên-BC · mTLS (verify SVID)"| PEPb
-    PEPa -.->|"authz?"| PDP
-    PEPb -.->|"authz?"| PDP
-    SPIRE -->|"SVID — MỌI workload: GW, PEP, service"| GW & PEPa & WA & PEPb & WB
-    CA --> SPIRE
-    classDef cp fill:#1f3a5f,stroke:#4a90d9,color:#fff;
-    classDef pep fill:#3a3320,stroke:#d9b84a,color:#fff;
-    classDef wl fill:#2d4a3e,stroke:#5fb37a,color:#fff;
-    classDef user fill:#444,stroke:#aaa,color:#fff;
-```
+Chọn **mặc định 1 BC = 1 microsegment** (khung lựa chọn & đánh đổi: [Baseline-SEC §4](../stds/Baseline-Security.md)). **Quyết định đặc thù:** *giữ per-BC để cô lập **Payment** (Tier-1, tiền thật)* — **không gom** dù cụm luồng tiền **Checkout + Order + Payment** rất chatty trong saga; ưu tiên **blast radius nhỏ** hơn lợi ích ít PEP-hop. Đổi ranh giới (gom/tách) = **gate review**.
 
-**Ba kiểm tra độc lập mỗi request (đừng gộp):** (1) xác thực **người dùng** (JWT RS256), (2) xác thực **workload** (mTLS/SVID), (3) **phân quyền** (PDP). **PEP đặt ở mọi ranh giới** — biên (API Gateway) *và* **cổng vào mỗi BC** (authz service-to-service, PoLP) — không chỉ ở Gateway. Nguyên tắc nền: *deny-by-default*, *verify per-request*, *least privilege*, *assume breach* — **không tin theo vị trí mạng**.
+## 6.2 Phân quyền đặc thù — Role & Tenant
 
-> **Lưu ý mô hình hóa:** (1) PEP/sidecar/SVID gắn với **workload**, không phải BC; một BC có thể chứa nhiều workload (1 BC ≠ 1 service — R-E1). (2) **API Gateway và PEP cổng vào segment bản thân chúng cũng là workload** và **nhận SVID** — SPIFFE "workload" = bất kỳ process cần danh tính, gồm gateway/ingress/sidecar. Trong mesh sidecar, chính **sidecar (PEP) giữ SVID & kết thúc mTLS**, app process phía sau nói loopback. Do đó SPIRE cấp SVID cho **mọi** thành phần tham gia mTLS, không chỉ service nghiệp vụ.
-
-> **Microsegmentation (R-A24) — quyết định của AD này:** chọn **mặc định 1 BC = 1 microsegment** (PEP ở cổng vào mỗi BC). Cho phép granularity khác khi cần và phải nêu rõ:
-> - **Gom nhóm:** gộp các BC quan hệ chặt (chatty, cùng đội/mức tin cậy) thành **một segment** — ít PEP-hop hơn nhưng **blast radius lớn hơn**.
-> - **Per-workload (strict ZTA):** mỗi workload một segment — isolation mạnh nhất, overhead cao nhất.
->
-> Ví dụ cân nhắc gom nhóm cho Marketplace-AiGen: cụm luồng tiền **Checkout + Order + Payment** rất chatty trong saga — có thể là một segment nội bộ (vẫn giữ PEP biên cụm + mTLS), đánh đổi blast radius. _Hiện tại giữ per-BC để cô lập Payment (Tier-1, tiền thật)._
-
-## 6.1 Xác thực (Authentication)
-
-* **Người dùng:** OIDC + JWT (RS256); IdP phát token; access TTL ngắn, refresh dài; MFA bắt buộc cho Admin & Merchant rút tiền; SSO Merchant tùy chọn.
-* **Workload:** SPIFFE/SPIRE cấp **SVID** cho mỗi workload; là nền tảng cho mTLS (§6.3) và authz service-to-service. Không service nào được tin chỉ vì nằm trong VPC.
-
-## 6.2 Phân quyền (Authorization)
-
-Mô hình **PDP/PEP**: quyết định tập trung ở **PDP** (policy-as-code), thực thi ở **PEP** đặt **mọi ranh giới** — Gateway (request người dùng) **và cổng vào mỗi BC** (gọi service-to-service, gắn với workload), **per-request** + **deny-by-default**. Authz s2s thực thi **PoLP**: caller chỉ gọi đúng capability được cấp (vd Checkout chỉ được init escrow ở Payment, không gọi op khác). Nội dung policy = **RBAC + tenant isolation**: mọi truy vấn dữ liệu Merchant gắn `merchant_id`; Merchant A **không** truy cập dữ liệu Merchant B.
-
-### 6.2.1 Role & Permission Matrix
+Authz s2s theo **PoLP** qua PDP/PEP (Baseline-SEC §2): vd Checkout **chỉ** được init escrow ở Payment, không gọi op khác. **Tenant isolation:** mọi truy vấn dữ liệu Merchant gắn `merchant_id`; Merchant A **không** truy cập dữ liệu Merchant B. **MFA bắt buộc** cho Admin & Merchant rút tiền.
 
 | Resource / Action | Admin | Merchant | Buyer |
 | --- | --- | --- | --- |
@@ -651,50 +620,31 @@ Mô hình **PDP/PEP**: quyết định tập trung ở **PDP** (policy-as-code),
 | Payout/đối soát | ✔ | ✔ xem của mình | ✘ |
 | Chứng từ đối soát (S3) | đọc | đọc của mình | ✘ |
 
-## 6.3 Mã hóa (Encryption)
+## 6.3 Chứng từ tài chính WORM (đặc thù)
 
-* **In-transit:** TLS 1.3 ở biên ngoài; mTLS giữa mọi workload nội bộ — chứng chỉ là SVID do SPIRE/CA cấp & xoay tự động.
-* **At-rest:** AES-256 (KMS/Vault); STK ngân hàng & PII mã hóa field-level.
-* **Chứng từ đối soát:** S3 + Object Lock (WORM) — _quyết định: write-once, deny overwrite/override_; IAM policy chi tiết **TBD** (cần ADR, kèm legal-hold & retention).
+Chứng từ đối soát: **S3 + Object Lock (WORM)** — write-once, deny overwrite/override ([ADR-0005](adr/ADR-0005-worm-settlement-doc.md)); IAM policy chi tiết **TBD** (cần ADR, kèm legal-hold & retention). Payment **egress chỉ tới PG/Bank** (qua PEP egress của segment).
 
-## 6.4 Bảo mật API (PEP tại từng ranh giới)
+## 6.4 Tuân thủ — gate & trạng thái đặc thù
 
-| Ranh giới | PEP | Enforce |
-| --- | --- | --- |
-| Public (Internet → edge) | API Gateway | Verify JWT, tenant scope, rate limit, validation, WAF |
-| Inter-service (cổng vào mỗi BC) | PEP gắn workload (vd sidecar) | mTLS (verify SVID) + authz s2s qua PDP (PoLP) |
-| Outbound (PG/Bank) | Egress policy | Secret từ Vault, egress hạn chế chỉ tới đích cho phép |
-| Inbound webhook | Gateway/handler | Verify chữ ký + allowlist IP + idempotency |
+**Gate review đặc thù** (ngoài gate chuẩn Baseline-SEC §8): đổi luồng tiền · truy cập xuyên tenant · đổi policy chứng từ bất biến · **đổi ranh giới microsegmentation** · mỗi cột mốc nâng cấp ZTA. Sai một bước → mất tiền / rò rỉ / vi phạm pháp lý / nới blast radius — máy không thay người quyết định.
 
-Bổ sung: CORS allowlist · CSRF cho state-changing · validate server-side (không tin client).
-
-## 6.5 Kiểm tra & Tuân thủ bảo mật
-
-> _Quy tắc (PHẦN F của `STD-DOC-v1.12`):_ AD ghi **invariant** + điểm cần **người review (gate)**. Cơ chế **thực thi tự động** (fitness function / policy-as-code trong CI) thuộc phạm vi **AaC** — tách riêng.
-
-**Invariant bảo mật cấp hệ thống** (theo mô hình microsegmentation §6, mặc định 1 BC = 1 segment; enforcement tự động → AaC, sau):
-
-| Invariant | Ghi chú |
-| --- | --- |
-| Mọi giao tiếp **xuyên microsegment** là mTLS (verify SVID), không plaintext | intra-segment tùy flavor (mesh: cũng mТLS; segment-gateway: vùng tin cậy nội bộ) |
-| **Default-deny giữa các segment** — lateral movement bị chặn ở ranh giới | NetworkPolicy/mesh authz; chỉ mở cặp được phép |
-| Không lưu lượng nào **bypass PEP** cổng vào/ra segment | cross-segment qua PEP ingress; outbound qua PEP egress |
-| Authz s2s theo **PoLP** (caller chỉ gọi capability được cấp) + PDP **deny-by-default** | — |
-| Mọi route public có authn + **tenant scope** | tại PEP biên (Gateway) |
-| Webhook luôn verify chữ ký + idempotency | — |
-| Payment egress chỉ tới PG/Bank (qua PEP egress của segment) | — |
-| Mọi workload tham gia mТLS có **SVID** (gồm Gateway/PEP), cert xoay tự động | — |
-| Không secret hardcode · S3 bật Object Lock | — |
-
-**Cần người review (gate, phán đoán):** luồng tiền mới · truy cập xuyên tenant · đổi policy chứng từ bất biến · **đổi ranh giới microsegmentation (gom/tách segment, đổi flavor)** · mỗi cột mốc nâng cấp ZTA. Sai một bước có thể mất tiền/rò rỉ dữ liệu/vi phạm pháp lý hoặc **nới blast radius** — máy không thay người quyết định được.
-
-> ⚠️ **Target vs current (R-A10):** ZTA là hành trình nhiều giai đoạn. *Hiện trạng:* mTLS qua mesh + PEP tại Gateway đã có. *Đang triển khai:* PDP tập trung + per-request authz ở sidecar (GĐ2); SPIRE federation (GĐ3). Mỗi cột mốc ZTA = 1 thay đổi kiến trúc → 1 ADR riêng. Sơ đồ trên là kiến trúc **mục tiêu**.
+> ⚠️ **Target vs current (R-A10):** *Hiện trạng:* mTLS qua mesh + PEP tại Gateway đã có. *Đang triển khai:* PDP tập trung + per-request authz ở sidecar (GĐ2); SPIRE federation (GĐ3). Mỗi cột mốc ZTA = **1 ADR riêng** ([ADR-0006](adr/ADR-0006-zero-trust.md)). Sơ đồ ZTA **mục tiêu** ở Baseline-SEC §3.
 
 # 7. YÊU CẦU CHẤT LƯỢNG (QUALITY)
 
+**Vì sao những thuộc tính này, ở mức ưu tiên này — bối cảnh nghiệp vụ lái NFR** (đọc kèm catalog §7.1.2, vốn cố tình ngắn gọn ở phần *target*):
+
+- **Financial integrity (H,H) — trục sống còn.** Tiền trong escrow là **tiền thật của khách**; một lệch tiền hay chứng từ bị sửa là **sự cố pháp lý/uy tín**, không phải bug thông thường. Vì thế *0 lệch tiền + đối soát khớp 100% + chứng từ bất biến* được đặt cao nhất và chi phối các quyết định escrow / idempotency / WORM.
+- **Performance & Scalability (H,H) — sinh từ flash-sale.** Cao điểm sự kiện đẩy tải lên ~3.000 RPS, và *checkout giỏ nhiều Merchant* là đường đi **đắt nhất** (đi qua ≥4 BC trong một saga đồng bộ) → P99 của riêng nó là thước đo khắc nghiệt nhất, không phải API trung bình.
+- **Availability — phân tầng theo hậu quả mất dịch vụ.** Payment/Order down = *không thu được tiền / không chốt được đơn* → **Tier-1, 99.95% (H,H)**. Checkout down chỉ chặn *đặt đơn mới* → **Tier-2 (H,M)**, chấp nhận được nhờ co giãn + canary.
+- **Recoverability (H,H) — đi kèm tiền thật.** Mất dữ liệu giao dịch Tier-1 = mất tiền → buộc RTO<1h / RPO<5min, không thể "khôi phục từ từ".
+- **Security (H,H) — vì multi-tenant + tiền.** Rò rỉ dữ liệu xuyên Merchant hoặc chiếm quyền luồng tiền là rủi ro cao nhất → Zero-Trust *deny-by-default* + cô lập tenant xuyên suốt.
+
+Các thuộc tính ưu tiên thấp hơn (search latency, thời gian duyệt sản phẩm) quan trọng cho **trải nghiệm** nhưng *không đe dọa tiền/uy tín*, nên để (M/L) — utility tree §7.1.1 phản ánh đúng thứ tự ưu tiên đó.
+
 ## 7.1 Quality tree / NFR catalog (chỉ mục)
 
-> _Quy tắc (R-E5 / R-E6 / R-E7):_ §7 tổ chức NFR thành **utility tree** (ATAM): *tiện ích → thuộc tính chất lượng → scenario lá*, mỗi lá gắn **ưu tiên (I×D)** = *tầm quan trọng nghiệp vụ × độ khó kỹ thuật* (H/M/L). **Catalog (§7.1.2) chính là tập lá** — chỉ mục, **không** thay chi tiết ở mục nhà (cơ chế §7.2, DR §8.3, bảo mật §6, observability §9, mục tiêu §1.1). Mỗi NFR có **ID ổn định** (Tech Spec trỏ ngược), **satisfied-by** = tactic + neo §/ADR (chỉ link, không chép — R-E5), **kiểu truy vết**:
+> _Quy tắc (R-E5 / R-E6 / R-E7):_ §7 tổ chức NFR thành **utility tree** (ATAM): *tiện ích → thuộc tính chất lượng → scenario lá*, mỗi lá gắn **ưu tiên (I×D)** = *tầm quan trọng nghiệp vụ × độ khó kỹ thuật* (H/M/L). **Catalog (§7.1.2) chính là tập lá** — chỉ mục, **không** thay chi tiết ở mục nhà (cơ chế §7.2, DR §8.2, bảo mật §6, observability §9, mục tiêu §1.1). Mỗi NFR có **ID ổn định** (Tech Spec trỏ ngược), **satisfied-by** = tactic + neo §/ADR (chỉ link, không chép — R-E5), **kiểu truy vết**:
 > `inherited` (mọi BC conform) · `allocated` (tách ngân sách, phải breakdown) · `owned` (1 BC) · `cross-BC` (AD-only, không BC đơn nào sở hữu) · `local` (chỉ ở Tech Spec — **không xuất hiện ở bảng này**). NFR **ưu tiên cao (H,H)** có **quality attribute scenario** ở §7.1.3.
 
 ### 7.1.1 Utility tree (ATAM — chỉ lá ưu tiên cao)
@@ -723,24 +673,26 @@ flowchart LR
 
 ### 7.1.2 NFR catalog (tập lá của cây)
 
+> _Quy ước satisfied-by (R-C11):_ cột này ghi **năng lực/tactic** (capability-first), **không** nêu tên sản phẩm cụ thể. Sản phẩm *binding* (Kafka/PostgreSQL/Redis/Elasticsearch/S3-WORM) đã được pin **một chỗ** ở [§2.1.1](#211-nguyên-tắc-thiết-kế-kiến-trúc) + [§7.2](#72-cơ-chế-hiện-thực-chất-lượng-tactics--theo-nfr); ở đây chỉ trỏ *năng lực + neo §/ADR*. Riêng quyết định event-bus phân vùng được neo [ADR-0003](adr/ADR-0003-event-driven-kafka.md).
+
 | ID | NFR (target) | Mục nhà | Satisfied-by (tactic → neo) | Kiểu | Ưu tiên (I×D) | BC đích / Tech Spec |
 | --- | --- | --- | --- | --- | --- | --- |
-| **NFR-PERF-01** | Checkout P99 < 800 ms | §7.2 · M5 | HPA (§2.4) · cache giá Redis (§7.2) · partition Kafka `merchant_id` (§7.2) · saga đồng bộ + **budget** · ADR-0002 | **allocated** | **(H,H)** | Checkout — breakdown ở `Checkout §2.1` |
-| **NFR-PERF-02** | Search P95 < 200 ms | §7.2 · M4 | search index ES · read replica Catalog (§7.2) | **owned** | (M,M) | Catalog |
-| **NFR-PERF-03** | API P99 (khác) < 500 ms | §7.2 | timeout mọi I/O (§8.2) · HPA (§2.4) | **inherited** | (M,L) | mọi BC |
-| **NFR-PERF-04** | Error rate < 0.1% | §7.2 | circuit breaker · retry + DLQ · graceful degradation (§8.2) | **inherited** | (H,M) | mọi BC |
-| **NFR-SCALE-01** | 3.000 RPS sustained | §7.2 · M5 | HPA stateless (§7.2) · partition Kafka · read replica | **allocated** | **(H,H)** | mọi BC (share RPS) |
-| **NFR-SCALE-02** | ≥ 10.000 Merchant | M1 | tenant isolation (§6.2) · DB-per-context (ADR-0001) | **cross-BC** | (M,M) | _no single owner_ |
-| **NFR-AVAIL-01** | Payment/Order 99.95% | §7.2 | multi-AZ (§2.4) · canary (§2.4.3) · idempotency money-op (§8.2) | **owned** | **(H,H)** | Payment, Order |
-| **NFR-AVAIL-02** | Checkout 99.9% | §7.2 | stateless + HPA · fail-safe degraded (§8.2) | **owned** | (H,M) | Checkout |
-| **NFR-AVAIL-03** | Catalog/Search 99.5% | §7.2 | read replica · cache fallback search (§8.2) | **owned** | (M,L) | Catalog |
-| **NFR-DR-01** | Tier-1 RTO<1h / RPO<5min | §8.3 | failover multi-AZ · hourly backup (§5.2.2) · WORM x-region (§8.3.2) | **owned** | **(H,H)** | Identity, Payment, Order |
-| **NFR-DR-02** | Tier-2 RTO<4h / RPO<1h | §8.3 | restore từ backup · rebuild stateless | **owned** | (M,M) | Checkout, Inventory |
-| **NFR-DR-03** | Tier-3 RTO<24h / RPO<4h | §8.3 | daily backup | **owned** | (L,L) | Catalog, Notification |
-| **NFR-FIN-01** | 0 lệch tiền · đối soát khớp 100% | M2 · §3.1.3 | escrow (ADR-0004) · idempotency money-op (§8.2) · WORM (ADR-0005) · reconcile + freeze payout (§9.4) | **cross-BC** | **(H,H)** | _no single owner_ (Payment chủ lực) |
-| **NFR-FIN-02** | Payout đúng hạn ≥ 99% · chứng từ bất biến | M3 · §5.2.3 | WORM Object Lock (ADR-0005) · payout retry + đối soát thủ công (§4.2) | **owned** | (H,M) | Payment |
+| **NFR-PERF-01** | Checkout P99 < 800 ms | §7.2 · M5 | autoscale stateless (§2.4) · cache giá nóng (§7.2) · phân vùng event-log theo `merchant_id` ([ADR-0003](adr/ADR-0003-event-driven-kafka.md)) · saga đồng bộ + **budget** · [ADR-0002](adr/ADR-0002-orchestration-checkout.md) | **allocated** | **(H,H)** | Checkout — breakdown ở `Checkout §2.1` |
+| **NFR-PERF-02** | Search P95 < 200 ms | §7.2 · M4 | index tìm kiếm toàn văn · read replica đọc Catalog (§7.2) | **owned** | (M,M) | Catalog |
+| **NFR-PERF-03** | API P99 (khác) < 500 ms | §7.2 | timeout mọi I/O (§8.1) · autoscale stateless (§2.4) | **inherited** | (M,L) | mọi BC |
+| **NFR-PERF-04** | Error rate < 0.1% | §7.2 | circuit breaker · retry + DLQ · graceful degradation (§8.1) | **inherited** | (H,M) | mọi BC |
+| **NFR-SCALE-01** | 3.000 RPS sustained | §7.2 · M5 | autoscale stateless (§7.2) · phân vùng event-log theo `merchant_id` ([ADR-0003](adr/ADR-0003-event-driven-kafka.md)) · read replica đọc | **allocated** | **(H,H)** | mọi BC (share RPS) |
+| **NFR-SCALE-02** | ≥ 10.000 Merchant | M1 | tenant isolation (§6.2) · DB-per-context ([ADR-0001](adr/ADR-0001-db-per-context.md)) | **cross-BC** | (M,M) | _no single owner_ |
+| **NFR-AVAIL-01** | Payment/Order 99.95% | §7.2 | multi-AZ (§2.4) · canary (§2.4.3) · idempotency money-op (§8.1) | **owned** | **(H,H)** | Payment, Order |
+| **NFR-AVAIL-02** | Checkout 99.9% | §7.2 | stateless + autoscale · fail-safe degraded (§8.1) | **owned** | (H,M) | Checkout |
+| **NFR-AVAIL-03** | Catalog/Search 99.5% | §7.2 | read replica · cache fallback search (§8.1) | **owned** | (M,L) | Catalog |
+| **NFR-DR-01** | Tier-1 RTO<1h / RPO<5min | §8.2 | failover multi-AZ · hourly backup (§5.2.2) · WORM x-region (§8.2) | **owned** | **(H,H)** | Identity, Payment, Order |
+| **NFR-DR-02** | Tier-2 RTO<4h / RPO<1h | §8.2 | restore từ backup · rebuild stateless | **owned** | (M,M) | Checkout, Inventory |
+| **NFR-DR-03** | Tier-3 RTO<24h / RPO<4h | §8.2 | daily backup | **owned** | (L,L) | Catalog, Notification |
+| **NFR-FIN-01** | 0 lệch tiền · đối soát khớp 100% | M2 · §3.1.3 | escrow ([ADR-0004](adr/ADR-0004-escrow.md)) · idempotency money-op (§8.1) · WORM ([ADR-0005](adr/ADR-0005-worm-settlement-doc.md)) · reconcile + freeze payout (§9.2) | **cross-BC** | **(H,H)** | _no single owner_ (Payment chủ lực) |
+| **NFR-FIN-02** | Payout đúng hạn ≥ 99% · chứng từ bất biến | M3 · §5.2.3 | chứng từ bất biến WORM ([ADR-0005](adr/ADR-0005-worm-settlement-doc.md)) · payout retry + đối soát thủ công (§4.2) | **owned** | (H,M) | Payment |
 | **NFR-FIN-03** | Tách đơn chính xác 100% | M1 · §3.1.1 | OrderSplitter (Checkout) · 1 escrow/giỏ · idempotent saga | **cross-BC** | (H,M) | _no single owner_ (Checkout điều phối) |
-| **NFR-SEC-01** | mTLS xuyên segment · default-deny · PoLP (invariants §6.5) | §6 | ZTA mTLS/SVID · PDP/PEP · NetworkPolicy (ADR-0006) | **inherited** | **(H,H)** | mọi BC (anchor index ở mỗi Tech Spec) |
+| **NFR-SEC-01** | mTLS xuyên segment · default-deny · PoLP (invariants Baseline-SEC §7) | §6 | ZTA mTLS/SVID · PDP/PEP · NetworkPolicy ([ADR-0006](adr/ADR-0006-zero-trust.md)) | **inherited** | **(H,H)** | mọi BC (anchor index ở mỗi Tech Spec) |
 | **NFR-SEC-02** | Tenant isolation (Merchant A ⊄ B) | §6.2 | `merchant_id` mọi query · authz PEP per-request | **inherited** | (H,M) | mọi BC |
 | **NFR-BIZ-01** | Duyệt sản phẩm < 24h | M4 · §1.1 | kiểm duyệt workflow Catalog | **owned** | (L,L) | Catalog |
 
@@ -752,84 +704,70 @@ flowchart LR
 
 | Scenario (thuộc tính) → NFR | Nguồn · Kích thích | Môi trường | Phản hồi (tactic → neo) | Thước đo |
 | --- | --- | --- | --- | --- |
-| **QAS-PERF-01** (Performance) → NFR-PERF-01 | Buyer · submit checkout giỏ nhiều Merchant | flash sale **3.000 RPS** | orchestrate saga đồng bộ; cache giá Redis + HPA + partition Kafka `merchant_id` (§2.4, §7.2); ngân sách per-hop (Checkout §2.1) | **P99 < 800 ms**; error < 0.1% |
-| **QAS-FIN-01** (Financial integrity) → NFR-FIN-01 | Cổng TT / settlement · webhook **trùng** hoặc settle đồng thời | vận hành + retry at-least-once | idempotency mọi money-op; escrow (ADR-0004); chứng từ WORM (ADR-0005); reconcile → **freeze payout** (§9.4) | **0 lệch tiền**; đối soát khớp 100% |
-| **QAS-AVAIL-01** (Availability) → NFR-AVAIL-01 | Hạ tầng · **mất 1 AZ** chứa Payment/Order | production multi-AZ | failover multi-AZ; canary; Payment Tier-1 cô lập (§2.4, §8.3) | **99.95%**; RTO < 1h / RPO < 5min |
-| **QAS-SEC-01** (Security) → NFR-SEC-01 | Workload bị xâm nhập (**assume breach**) · cố gọi service / tenant khác | lateral movement trong VPC | ZTA mTLS/SVID + PDP/PEP **deny-by-default** + NetworkPolicy + tenant scope (ADR-0006, §6) | chặn ở PEP; **0 truy cập xuyên tenant** |
+| **QAS-PERF-01** (Performance) → NFR-PERF-01 | Buyer · submit checkout giỏ nhiều Merchant | flash sale **3.000 RPS** | orchestrate saga đồng bộ; cache giá nóng + autoscale stateless + phân vùng event-log theo `merchant_id` ([ADR-0003](adr/ADR-0003-event-driven-kafka.md); §2.4, §7.2); ngân sách per-hop (Checkout §2.1) | **P99 < 800 ms**; error < 0.1% |
+| **QAS-SCALE-01** (Scalability) → NFR-SCALE-01 | Buyer (đại trà) · tải tăng đột biến & **duy trì** đỉnh | flash sale / sự kiện kéo dài | autoscale stateless theo RPS + phân vùng event-log theo `merchant_id` ([ADR-0003](adr/ADR-0003-event-driven-kafka.md)) + read replica đọc Catalog; capacity headroom 3–5× (§2.4, §7.2) — co giãn, không dồn queue | **3.000 RPS sustained**; không degrade P99; error < 0.1% |
+| **QAS-FIN-01** (Financial integrity) → NFR-FIN-01 | Cổng TT / settlement · webhook **trùng** hoặc settle đồng thời | vận hành + retry at-least-once | idempotency mọi money-op; escrow ([ADR-0004](adr/ADR-0004-escrow.md)); chứng từ WORM ([ADR-0005](adr/ADR-0005-worm-settlement-doc.md)); reconcile → **freeze payout** (§9.2) | **0 lệch tiền**; đối soát khớp 100% |
+| **QAS-AVAIL-01** (Availability) → NFR-AVAIL-01 | Hạ tầng · **mất 1 AZ** chứa Payment/Order | production multi-AZ | failover multi-AZ; canary; Payment Tier-1 cô lập (§2.4, §8.2) | **99.95%**; degrade an toàn, không mất giao dịch |
+| **QAS-DR-01** (Recoverability) → NFR-DR-01 | Thảm họa vùng / hỏng dữ liệu Tier-1 (Identity/Payment/Order) | mất vùng hoặc data corruption | failover multi-AZ; restore từ hourly backup (§5.2.2); chứng từ WORM cross-region (§8.2); smoke-test luồng tiền trước khi công bố phục hồi | **RTO < 1h / RPO < 5min**; đối soát khớp sau phục hồi |
+| **QAS-SEC-01** (Security) → NFR-SEC-01 | Workload bị xâm nhập (**assume breach**) · cố gọi service / tenant khác | lateral movement trong VPC | ZTA mTLS/SVID + PDP/PEP **deny-by-default** + NetworkPolicy + tenant scope ([ADR-0006](adr/ADR-0006-zero-trust.md), §6) | chặn ở PEP; **0 truy cập xuyên tenant** |
 
 ## 7.2 Cơ chế hiện thực chất lượng (tactics — theo NFR)
 
-> _Quy tắc (R-E5 / R-E6):_ mục này chỉ giữ **cơ chế/tactic** (phần *"how"*) — **không restate target** (mọi target, gồm SLA & RTO, sống **một chỗ** ở §7.1.2 catalog). Mỗi tactic nêu **NFR nó phục vụ** (chiều ngược của satisfied-by). Cơ chế thuộc concern khác (DR, bảo mật) ở mục nhà của chúng (§8.3, §6) — chỉ **trỏ tới**, không lặp. Sizing/version literal → IaC (R-C1).
+> _Quy tắc (R-E5 / R-E6):_ mục này chỉ giữ **cơ chế/tactic** (phần *"how"*) — **không restate target** (mọi target, gồm SLA & RTO, sống **một chỗ** ở §7.1.2 catalog). Mỗi tactic nêu **NFR nó phục vụ** (chiều ngược của satisfied-by). Cơ chế thuộc concern khác (DR, bảo mật) ở mục nhà của chúng (§8.2, §6) — chỉ **trỏ tới**, không lặp. Sizing/version literal → IaC (R-C1).
 
 | Tactic / cơ chế | NFR phục vụ | Ghi chú / neo |
 | --- | --- | --- |
 | **HPA** (autoscale CPU>70% / RPS; service **stateless**) | NFR-PERF-01, NFR-SCALE-01, NFR-AVAIL-02 | §2.4 deploy |
 | **Read replica** (Catalog — tách đọc/ghi) | NFR-PERF-02, NFR-SCALE-01, NFR-AVAIL-03 | — |
-| **Partition Kafka** theo `merchant_id` | NFR-SCALE-01, NFR-PERF-01 | ordering per merchant; ADR-0003 |
+| **Partition Kafka** theo `merchant_id` | NFR-SCALE-01, NFR-PERF-01 | ordering per merchant; [ADR-0003](adr/ADR-0003-event-driven-kafka.md) |
 | **Caching** — CDN (ảnh/sản phẩm) · Redis (phiên checkout, giá) · local (feature flags) | NFR-PERF-01, NFR-PERF-02 | phục vụ flash-sale (QAS-PERF-01) |
 | **Capacity headroom 3–5×** (ước từ DAU × đơn/user; Payment & Order tier-1) | NFR-SCALE-01, NFR-AVAIL-01 | sizing literal → IaC |
-| **Multi-AZ failover + backup + WORM x-region** | NFR-AVAIL-01, NFR-DR-01/02/03 | chi tiết ở **§8.3** (DR) — trỏ, không lặp |
+| **Multi-AZ failover + backup + WORM x-region** | NFR-AVAIL-01, NFR-DR-01/02/03 | chi tiết ở **§8.2** (DR) — trỏ, không lặp |
 
 > **Vì sao bỏ các mục cố định *Hiệu năng / SLA / Capacity / Scaling*:** chúng từng **lặp lại target** đã có ở catalog (perf metrics ≡ `NFR-PERF-*`; SLA ≡ `NFR-AVAIL-*`). Theo nguyên tắc *một target một chỗ* (R-E6/G25): target ở §7.1.2, scenario ở §7.1.3, còn mục này chỉ giữ **cơ chế** — xuất hiện **theo NFR thực có**, không theo bucket template cứng.
 
 # 8. XỬ LÝ LỖI & KHẢ NĂNG PHỤC HỒI
 
-## 8.1 Phân loại và xử lý lỗi
+> **Conform `STD-RES-v1.0`** — [Baseline-Resilience-DR](../stds/Baseline-Resilience-DR.md). Error model, resilience patterns (saga, idempotency, circuit breaker, timeout, graceful degradation), **khung tier DR** + kế hoạch DR chuẩn nằm ở baseline. Mục này chỉ ghi **delta đặc thù**; **target RTO/RPO sống ở [§7.1.2 catalog](#712-nfr-catalog-tập-lá-của-cây)** (`NFR-DR-01/02/03`), không lặp.
 
-Chuẩn HTTP (400/401/403/404/409/422/429/500/503); error model `{error:{code,message,details[]}}` — hành động chi tiết ở runbook (ngoài AD).
+## 8.1 Áp dụng pattern cho hệ thống
 
-## 8.2 Resilience Patterns
+- **Saga + compensation (Checkout):** reserve → create order → init escrow; bước sau lỗi → release reservation + hủy pending order (ngược thứ tự).
+- **Idempotency bắt buộc:** webhook thanh toán, payout, escrow.
+- **Graceful degradation:** Catalog/Inventory down → 503 (fail-safe, không tạo đơn sai giá/kho); search lỗi → cache.
 
-* **Saga + compensation** (Checkout): reserve → create order → init escrow; bước sau lỗi → release reservation + hủy pending order (ngược thứ tự).
-* **Idempotency (bắt buộc):** webhook thanh toán, payout, escrow.
-* **Circuit Breaker** gọi cổng thanh toán/ngân hàng; **Timeout** mọi I/O; **Graceful degradation** search lỗi → cache.
+> **Invariant đặc thù:** không bao giờ để **reservation/pending order mồ côi** sau khi saga checkout thất bại (enforce tự động → AaC).
 
-> **Invariant cấp hệ thống:** không bao giờ để **reservation/pending order mồ côi** sau khi saga checkout thất bại. (Enforcement tự động → AaC.)
+## 8.2 Phân tier & kế hoạch DR (delta)
 
-## 8.3 Disaster Recovery (DR)
-
-### 8.3.1 RTO / RPO
-
-| Tier | RTO | RPO | Gồm |
-| --- | --- | --- | --- |
-| 1 Critical | < 1h | < 5min | Identity, Payment, Order |
-| 2 Business | < 4h | < 1h | Checkout, Inventory |
-| 3 Important | < 24h | < 4h | Catalog, Notification |
-
-### 8.3.2 Kế hoạch DR
-
-Failover multi-AZ; restore từ backup; chứng từ S3 WORM cross-region replication; smoke test luồng tiền trước khi thông báo phục hồi; post-mortem trong 48h.
+**Phân tier** (target ở catalog): **Tier-1** Identity/Payment/Order · **Tier-2** Checkout/Inventory · **Tier-3** Catalog/Notification. **Delta kế hoạch** (ngoài Baseline-RES §4): bước **smoke-test luồng tiền** bắt buộc trước khi công bố phục hồi; chứng từ S3 WORM cross-region ([ADR-0005](adr/ADR-0005-worm-settlement-doc.md)).
 
 # 9. QUAN SÁT & GIÁM SÁT (OBSERVABILITY)
 
-## 9.1 Logging
+> **Conform `STD-OBS-v1.0`** — [Baseline-Observability](../stds/Baseline-Observability.md). Logging JSON/mask/audit, RED + Golden Signals, OTel + sampling, thang severity P1–P3, taxonomy dashboard — chuẩn ở baseline. Mục này chỉ ghi **đặc thù nghiệp vụ**.
 
-Structured JSON, mask PII/STK/secret; audit log bất biến (S3 Object Lock, 5 năm). Trường: timestamp, level, service, traceId, merchantId, requestId.
+## 9.1 Đặc thù đo lường & trace
 
-## 9.2 Metrics
+- **Log field thêm:** `merchantId` (multi-tenant); audit log giữ **5 năm**.
+- **Business metrics:** `business_order_created_total`, `escrow_held_total`, `payout_total{status}`, `checkout_saga_compensation_total`.
+- **Tracing:** propagate context qua **gRPC + Kafka** — trọng yếu vì checkout đi qua **≥ 4 BC**.
 
-RED per service + Golden Signals. `business_order_created_total`, `escrow_held_total`, `payout_total{status}`, `checkout_saga_compensation_total`.
-
-## 9.3 Distributed Tracing
-
-OpenTelemetry; quan trọng vì checkout đi qua ≥ 4 BC; 100% errors, 5% normal; propagate trace context qua **gRPC + Kafka**.
-
-## 9.4 Alerting
+## 9.2 Alert đặc thù
 
 | Alert | Severity | Hành động |
 | --- | --- | --- |
 | Payment fail rate > 5%/5m | P1 | PagerDuty |
-| Escrow/đối soát lệch | P1 | PagerDuty + freeze payout |
+| Escrow/đối soát lệch | P1 | PagerDuty + **freeze payout** |
 | Checkout saga compensation spike | P2 | Slack + runbook |
 | Truy cập xuyên tenant phát hiện | P1 | PagerDuty + Security |
 
-## 9.5 Dashboard
+## 9.3 Dashboard đặc thù
 
-Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fail, tenant violation, audit) · **Finance** (escrow balance, payout, đối soát).
+`Security` (auth fail, tenant violation, audit) · `Finance` (escrow balance, payout, đối soát) — ngoài bộ chuẩn (Baseline-OBS §5).
 
 # 10. AI SECURITY
 
-**Không áp dụng (N/A — R-A1):** hệ thống không sử dụng thành phần AI/LLM. Nếu sau này thêm (vd gợi ý sản phẩm bằng LLM), mục này bắt buộc kích hoạt theo checklist AI Security.
+**Không áp dụng (N/A — R-A1):** hệ thống không có thành phần AI/LLM. Nếu sau này thêm (vd gợi ý sản phẩm bằng LLM), **kích hoạt `STD-AISEC-v1.0`** — [Baseline-AI-Security](../stds/Baseline-AI-Security.md) (address từng hạng mục checklist + delta).
 
 # PHỤ LỤC
 
@@ -840,6 +778,10 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 | Tài liệu | Mô tả | Link / Mã |
 | --- | --- | --- |
 | Quy tắc viết AD & Tech Spec | `STD-DOC-v1.15` | [docs/stds/QuyTac-AD-va-TechSpec.md](../stds/QuyTac-AD-va-TechSpec.md) |
+| Baseline bảo mật (conform §6) | `STD-SEC-v1.0` | [stds/Baseline-Security.md](../stds/Baseline-Security.md) |
+| Baseline phục hồi & DR (conform §8) | `STD-RES-v1.0` | [stds/Baseline-Resilience-DR.md](../stds/Baseline-Resilience-DR.md) |
+| Baseline observability (conform §9) | `STD-OBS-v1.0` | [stds/Baseline-Observability.md](../stds/Baseline-Observability.md) |
+| Baseline AI-Security (conform §10) | `STD-AISEC-v1.0` | [stds/Baseline-AI-Security.md](../stds/Baseline-AI-Security.md) |
 | Tech Spec — Checkout | Thiết kế chi tiết orchestrator | [techspec/Checkout.md](techspec/Checkout.md) |
 | ADR cấp hệ thống (tập file) | Quyết định kiến trúc (Context→Decision→Consequences + Drivers) | [docs/design/adr/](adr/README.md) |
 | OpenAPI / proto / AsyncAPI | Hợp đồng API/event đầy đủ | [Link] |
@@ -875,7 +817,7 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 
 | BC | §AD liên quan | Tech Spec |
 | --- | --- | --- |
-| Checkout | §2.2, §3.1.1, §4, §8.2 | [techspec/Checkout.md](techspec/Checkout.md) ✅ |
+| Checkout | §2.2, §3.1.1, §4, §8.1 | [techspec/Checkout.md](techspec/Checkout.md) ✅ |
 | Payment | §2.2, §3.1.3, §5, §6.3 | `techspec/Payment.md` (TODO) |
 | Order | §3, §4 | `techspec/Order.md` (TODO) |
 | Catalog | §2.2, §3.3 | `techspec/Catalog.md` (TODO) |
@@ -899,7 +841,7 @@ Service Overview (SRE) · Business KPIs (PO) · SLA/SLO · **Security** (auth fa
 
 **Bounded Context (BC)** — ranh giới mô hình hóa của một miền nghiệp vụ. **Escrow** — giữ tiền trung gian đến khi đơn hoàn tất. **Settlement** — đối soát. **Payout** — chi trả Merchant. **WORM** — Write Once Read Many (bất biến). **Saga** — chuỗi giao dịch phân tán + compensation. **Tenant isolation** — cô lập dữ liệu theo Merchant. **OHS/PL/ACL** — Open Host Service / Published Language / Anti-Corruption Layer (DDD). **mTLS/SVID** — mutual TLS / SPIFFE Verifiable Identity Document. **PDP/PEP** — Policy Decision/Enforcement Point. **PII** — Personally Identifiable Information.
 
-## D. Checklist Definition-of-Done cho AD (PHẦN H của `STD-DOC-v1.12`)
+## D. Checklist Definition-of-Done cho AD (PHẦN H của `STD-DOC-v1.15`)
 
 | # | Hạng mục | ✓ |
 | --- | --- | --- |

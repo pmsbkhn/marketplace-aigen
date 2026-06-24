@@ -2,14 +2,14 @@
 
 | Thông tin tài liệu | Giá trị |
 | --- | --- |
-| Mã tài liệu | `TS-CHECKOUT-v1.4` |
+| Mã tài liệu | `TS-CHECKOUT-v1.5` |
 | Loại | **Tech Spec** — cấp bounded context (1 file / BC) |
 | Thuộc AD | [AD-Marketplace-AiGen](../AD-Marketplace-AiGen.md) — BC "Checkout": structure §2.2, context map §2.3, flows §3, interfaces §4, security §6 |
 | Chuẩn áp dụng | `STD-DOC-v1.15` (Module/C&C/Deployment views) · arc42 · C4 L3 · ISO 42010 |
 | Owner | Checkout team |
 | Tier / Data class | **Tier 2 — Business Critical** · L2 (cart, session) + L3 (giá snapshot, merchantId) |
 | RTO / RPO | RTO < 4h · RPO < 1h |
-| Trạng thái | Draft v1.4 |
+| Trạng thái | Draft v1.5 |
 | Sơ đồ | Mermaid (toàn bộ) |
 | Ngoài phạm vi | AaC / fitness-function enforcement (tách riêng) — Tech Spec này chỉ chốt thiết kế & invariant. |
 
@@ -59,7 +59,7 @@ flowchart LR
 
 **Goals:** tổng hợp giá (snapshot) → reserve kho → tách đơn theo Merchant → tạo pending order → init escrow, tất cả trong **một saga đồng bộ**; **compensation tập trung** khi một bước lỗi; **idempotency** chống double-submit.
 
-**Non-goals (thuộc BC khác):** xử lý webhook thanh toán (Payment); state machine đơn sau khi tạo (Order); quản lý giỏ hàng/cart; tồn kho (Inventory). Saga **xuyên BC** end-to-end → ở [AD §3.1.1](../AD-Marketplace-AiGen.md) (compensation: AD §8.2); Tech Spec này chỉ mô tả góc nhìn điều phối của Checkout.
+**Non-goals (thuộc BC khác):** xử lý webhook thanh toán (Payment); state machine đơn sau khi tạo (Order); quản lý giỏ hàng/cart; tồn kho (Inventory). Saga **xuyên BC** end-to-end → ở [AD §3.1.1](../AD-Marketplace-AiGen.md) (compensation: AD §8.1); Tech Spec này chỉ mô tả góc nhìn điều phối của Checkout.
 
 # 2. Requirements (tóm tắt — nguồn đầy đủ ở backlog)
 
@@ -84,6 +84,8 @@ flowchart LR
 | RTO / RPO | < 4h / < 1h | `NFR-DR-02` (**owned**) | không DB → Redis ephemeral; reservation TTL tự giải phóng §4.3/§6 |
 | Throughput | 3.000 RPS sustained | `NFR-SCALE-01` (**allocated**) | HPA theo RPS §3.3 · stateless |
 | Degraded mode | Catalog/Inventory down ⇒ 503 | `NFR-PERF-04` (inherited) + ADR-CHK-4 | fail-safe: không tạo đơn sai giá/kho §6 |
+| Zero-trust / mTLS | default-deny · PoLP xuyên segment | `NFR-SEC-01` (inherited) | Checkout = 1 microsegment; PEP cổng vào (verify JWT/SVID) + PEP egress (SVID + PoLP) §1, §3.1, §3.2 |
+| Tenant isolation | Buyer A ⊄ B (scope per-request) | `NFR-SEC-02` (inherited) | `CheckoutController` extract tenant scope từ JWT §3.1.1; scope `catalog:read:price`… mỗi connector §3.2 |
 | Idempotency phiên (chống double-submit) | cùng key → đúng 1 saga | **BC-local** (không nổi lên AD) | Redis fast-path §4.3 · distributed lock · BN-2 |
 
 ## 2.1 Ngân sách độ trễ — allocation cho `NFR-PERF-01` (R-E6)
@@ -529,7 +531,7 @@ sequenceDiagram
 
 # 6. Operations & Resilience
 
-> DR cấp platform ở [AD §8.3](../AD-Marketplace-AiGen.md) — dưới đây chỉ **delta** của BC.
+> DR cấp platform ở [AD §8.2](../AD-Marketplace-AiGen.md) — dưới đây chỉ **delta** của BC.
 
 **Backup & Recovery (delta):**
 
