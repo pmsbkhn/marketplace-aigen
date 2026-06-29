@@ -94,18 +94,18 @@ public class SubmitCheckoutUc implements SubmitCheckout {
         validateShape(cmd);
 
         // Idempotency fast-path: a terminal session answers without re-running the saga.
-        Optional<CheckoutSession> cached = sessions.find(cmd.idempotencyKey());
+        Optional<CheckoutSession> cached = sessions.find(cmd.idempotencyKey().value());
         if (cached.isPresent()) {
             return resultFromCache(cached.get());
         }
 
-        if (!sessions.tryLock(cmd.idempotencyKey())) {
+        if (!sessions.tryLock(cmd.idempotencyKey().value())) {
             throw new CheckoutDomainException(CheckoutErrorCode.CHECKOUT_IN_PROGRESS);
         }
         try {
             return runCheckout(cmd);
         } finally {
-            sessions.unlock(cmd.idempotencyKey());
+            sessions.unlock(cmd.idempotencyKey().value());
         }
     }
 
@@ -143,7 +143,7 @@ public class SubmitCheckoutUc implements SubmitCheckout {
             if (!state.isTerminal()) {
                 state.fire(CheckoutTrigger.FAIL);
             }
-            sessions.saveFailed(cmd.idempotencyKey(), cmd.buyerId(), stepFailure.getMessage());
+            sessions.saveFailed(cmd.idempotencyKey().value(), cmd.buyerId(), stepFailure.getMessage());
             throw new CheckoutDomainException(CheckoutErrorCode.CHECKOUT_FAILED,
                     "Checkout failed and was compensated — retry with a new idempotency key. Cause: "
                             + stepFailure.getMessage());
@@ -163,7 +163,7 @@ public class SubmitCheckoutUc implements SubmitCheckout {
                     SubmitCheckoutCmd cmd = ctx.require("cmd");
                     CartSnapshot cart = ctx.require("cart");
                     ReservationDto reservation =
-                            inventory.reserveStock(cmd.idempotencyKey(), aggregateBySku(cart));
+                            inventory.reserveStock(cmd.idempotencyKey().value(), aggregateBySku(cart));
                     if (!reservation.allReserved()) {
                         throw new CheckoutDomainException(CheckoutErrorCode.OUT_OF_STOCK,
                                 "Out of stock: " + reservation.shortages());
@@ -208,7 +208,7 @@ public class SubmitCheckoutUc implements SubmitCheckout {
                             .map(g -> new EscrowAllocationDto(orderIdByMerchant.get(g.merchantId()),
                                     g.merchantId(), g.subtotal().amount()))
                             .toList();
-                    EscrowDto escrow = payment.initEscrow(cmd.idempotencyKey(),
+                    EscrowDto escrow = payment.initEscrow(cmd.idempotencyKey().value(),
                             cart.grandTotal().amount(), cart.grandTotal().currency().name(),
                             allocations, cmd.buyerId());
                     ctx.put("escrow", escrow);
@@ -219,7 +219,7 @@ public class SubmitCheckoutUc implements SubmitCheckout {
                     CartSnapshot cart = ctx.require("cart");
                     List<String> createdOrderIds = ctx.require("orderIds");
                     EscrowDto escrow = ctx.require("escrow");
-                    sessions.saveCompleted(cmd.idempotencyKey(), cmd.buyerId(), createdOrderIds,
+                    sessions.saveCompleted(cmd.idempotencyKey().value(), cmd.buyerId(), createdOrderIds,
                             escrow.paymentUrl(), cart.grandTotal().amount());
                 })
                 .build();
@@ -321,7 +321,7 @@ public class SubmitCheckoutUc implements SubmitCheckout {
                         li.unitPrice().amount(), li.unitPrice().currency().name(), li.quantity()))
                 .toList();
         // One order per merchant → per-order idempotency key (Order has UNIQUE checkout_ref).
-        return new CreateOrderDto(cmd.idempotencyKey() + ":" + group.merchantId(), cmd.buyerId(),
+        return new CreateOrderDto(cmd.idempotencyKey().value() + ":" + group.merchantId(), cmd.buyerId(),
                 group.merchantId(), address, lines);
     }
 

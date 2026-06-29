@@ -67,7 +67,7 @@ class CheckoutControllerTest {
                 .andExpect(jsonPath("$.data.orderIds[0]").value("O-1"))
                 .andExpect(jsonPath("$.data.grandTotalAmount").value(250));
 
-        assertEquals("IK-1", submit.lastCmd.idempotencyKey());
+        assertEquals("IK-1", submit.lastCmd.idempotencyKey().value());
         assertEquals("B-1", submit.lastCmd.buyerId(), "identity from header, never from body");
         assertEquals(2, submit.lastCmd.items().size());
     }
@@ -118,7 +118,7 @@ class CheckoutControllerTest {
                 throw toThrow;
             }
             this.lastCmd = cmd;
-            return new CheckoutResultView("https://pg.example.com/pay/" + cmd.idempotencyKey(),
+            return new CheckoutResultView("https://pg.example.com/pay/" + cmd.idempotencyKey().value(),
                     List.of("O-1", "O-2"), 250);
         }
     }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
+import tech.vsf.ptnt.msfw.domain.core.IdempotencyKey;
 import tech.vsf.ptnt.springcore.web.common.CommonHttpResponse;
 import vn.marketplace.checkout.adapter.checkout.dto.CheckoutRequest;
 import vn.marketplace.checkout.adapter.checkout.facade.CheckoutFacade;
@@ -47,7 +48,8 @@ public class CheckoutController {
                         .toList();
         String buyerId = (userId == null || userId.isBlank()) ? "anonymous" : userId;
 
-        CheckoutResultView view = facade.submit(new SubmitCheckoutCmd(idempotencyKey, buyerId, address, items));
+        CheckoutResultView view = facade.submit(
+                new SubmitCheckoutCmd(new IdempotencyKey(idempotencyKey), buyerId, address, items));
         return ResponseEntity.ok(new CommonHttpResponse(HttpStatus.OK, view));
     }
 

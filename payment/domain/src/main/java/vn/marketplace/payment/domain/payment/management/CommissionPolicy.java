@@ -1,5 +1,7 @@
 package vn.marketplace.payment.domain.payment.management;
 
+import tech.vsf.ptnt.msfw.domain.exception.InvalidArgumentException;
+
 import vn.marketplace.payment.domain.payment.Money;
 
 /**
@@ -17,7 +19,7 @@ public class CommissionPolicy {
 
     public CommissionPolicy(int rateBasisPoints) {
         if (rateBasisPoints < 0 || rateBasisPoints > 10_000) {
-            throw new IllegalArgumentException("rateBasisPoints must be between 0 and 10000");
+            throw new InvalidArgumentException("rateBasisPoints must be between 0 and 10000");
         }
         this.rateBasisPoints = rateBasisPoints;
     }

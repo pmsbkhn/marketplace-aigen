@@ -1,5 +1,7 @@
 package vn.marketplace.payment.domain.escrow;
 
+import tech.vsf.ptnt.msfw.domain.exception.InvalidArgumentException;
+
 import tech.vsf.ptnt.msfw.domain.core.Snapshotable;
 import tech.vsf.ptnt.msfw.domain.eventsourcing.EventSourcedAggregate;
 import tech.vsf.ptnt.msfw.domain.type.DTime;
@@ -41,14 +43,14 @@ public class EscrowLedger extends EventSourcedAggregate<EscrowLedgerId>
             throw new IllegalStateException("escrow not open");
         }
         if (amount <= 0) {
-            throw new IllegalArgumentException("amount must be positive");
+            throw new InvalidArgumentException("amount must be positive");
         }
         apply(new FundsHeld(id, amount, DTime.now()));
     }
 
     public void release(long amount) {
         if (amount <= 0 || amount > held) {
-            throw new IllegalArgumentException("cannot release " + amount + " of " + held + " held");
+            throw new InvalidArgumentException("cannot release " + amount + " of " + held + " held");
         }
         apply(new FundsReleased(id, amount, DTime.now()));
     }

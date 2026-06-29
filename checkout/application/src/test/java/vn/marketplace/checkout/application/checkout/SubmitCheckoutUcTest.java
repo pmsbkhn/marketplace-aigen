@@ -9,6 +9,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import tech.vsf.ptnt.msfw.domain.core.IdempotencyKey;
 import vn.marketplace.checkout.application.checkout.SubmitCheckoutCmd.CheckoutItemInput;
 import vn.marketplace.checkout.application.checkout.SubmitCheckoutCmd.ShippingAddressInput;
 import vn.marketplace.checkout.domain.shared.CheckoutDomainException;
@@ -32,7 +33,7 @@ class SubmitCheckoutUcTest {
     }
 
     private SubmitCheckoutCmd cmd(CheckoutItemInput... items) {
-        return new SubmitCheckoutCmd("IK-1", "B-1", ADDRESS, List.of(items));
+        return new SubmitCheckoutCmd(new IdempotencyKey("IK-1"), "B-1", ADDRESS, List.of(items));
     }
 
     private CheckoutItemInput item(String sku, int qty, String merchantId) {
@@ -155,7 +156,7 @@ class SubmitCheckoutUcTest {
     @Test
     void emptyCartIsRejected() {
         CheckoutDomainException ex = assertThrows(CheckoutDomainException.class,
-                () -> uc.execute(new SubmitCheckoutCmd("IK-1", "B-1", ADDRESS, List.of())));
+                () -> uc.execute(new SubmitCheckoutCmd(new IdempotencyKey("IK-1"), "B-1", ADDRESS, List.of())));
         assertEquals(CheckoutErrorCode.EMPTY_CART, ex.checkoutErrorCode());
     }
 }

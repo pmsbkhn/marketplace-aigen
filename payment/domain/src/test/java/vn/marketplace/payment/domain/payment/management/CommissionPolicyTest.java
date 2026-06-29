@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+import tech.vsf.ptnt.msfw.domain.exception.InvalidArgumentException;
 import vn.marketplace.payment.domain.payment.Currency;
 import vn.marketplace.payment.domain.payment.Money;
 
@@ -37,7 +38,7 @@ class CommissionPolicyTest {
 
     @Test
     void rateOutsideRangeIsRejected() {
-        assertThrows(IllegalArgumentException.class, () -> new CommissionPolicy(-1));
-        assertThrows(IllegalArgumentException.class, () -> new CommissionPolicy(10_001));
+        assertThrows(InvalidArgumentException.class, () -> new CommissionPolicy(-1));
+        assertThrows(InvalidArgumentException.class, () -> new CommissionPolicy(10_001));
     }
 }

@@ -1,5 +1,7 @@
 package vn.marketplace.catalog.domain.product;
 
+import tech.vsf.ptnt.msfw.domain.exception.InvalidArgumentException;
+
 import java.util.Objects;
 
 import tech.vsf.ptnt.msfw.domain.DomainValue;
@@ -17,7 +19,7 @@ public record Money(long amount, Currency currency) implements DomainValue {
     public Money {
         Objects.requireNonNull(currency, "currency cannot be null");
         if (amount < 0) {
-            throw new IllegalArgumentException("amount cannot be negative");
+            throw new InvalidArgumentException("amount cannot be negative");
         }
     }
 

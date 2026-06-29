@@ -1,5 +1,7 @@
 package vn.marketplace.catalog.domain.product;
 
+import tech.vsf.ptnt.msfw.domain.exception.InvalidArgumentException;
+
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -16,7 +18,7 @@ public record SkuCode(String value) implements DomainValue {
     public SkuCode {
         Objects.requireNonNull(value, "sku code cannot be null");
         if (!PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Invalid sku code: " + value);
+            throw new InvalidArgumentException("Invalid sku code: " + value);
         }
     }
 
