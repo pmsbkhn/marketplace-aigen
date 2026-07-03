@@ -1,9 +1,0 @@
-TC-CAT-01 [Product Lifecycle]: Tạo Product mới, assert trạng thái mặc định là PENDING.
-
-TC-CAT-02 [Admin Authority]: Gọi hàm duyệt sản phẩm từ PENDING sang ACTIVE. Truyền adminId -> Thành công. Truyền ID của một Merchant -> Ném lỗi DomainException(UNAUTHORIZED_ACTION).
-
-TC-CAT-03 [Strict Pricing]: Khởi tạo Variant với sku có priceAmount = 0 hoặc giá trị âm -> Ném lỗi DomainException(INVALID_PRICE).
-
-TC-CAT-04 [Tenant Immutability]: Khởi tạo Product với merchantId = "M-123". Dùng Reflection (để giả lập hacker) hoặc gọi các hàm nghiệp vụ cố tình đổi merchantId sang "M-456" -> AI không được phép thiết kế bất kỳ hàm nào hỗ trợ việc này (Compile error hoặc Exception).
-
-TC-CAT-05 [Event Generation]: Sau khi đổi trạng thái sang ACTIVE, gọi DomainEventPublisher.getEvents() -> Assert list trả về có chứa chính xác sự kiện ProductCreated.

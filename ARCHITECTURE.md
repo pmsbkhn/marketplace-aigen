@@ -18,9 +18,10 @@ Architecture = **Hexagonal** (`domain → application → adapter`, deps point i
 └── adapter/       → <service>-service       (Spring Boot; depends on application)
 ```
 
-Parent pom: Java 21, Spring Boot 4.0.6, Spring Cloud 2025.1.1, `msfw 1.0-SNAPSHOT`;
-`maven-compiler-plugin` with `<parameters>true</parameters>` (**required** — msfw reflection + Spring MVC
-need parameter names).
+Parent pom: Java 21, Spring Boot 4.0.6, Spring Cloud 2025.1.1, msfw via the `msfw-bom` import from
+GitHub Packages (`tech.vsf.ptnt.msfw:msfw-bom`, then omit per-artifact versions; services now on
+**1.0.0**); `maven-compiler-plugin` with `<parameters>true</parameters>`
+(**required** — msfw reflection + Spring MVC need parameter names).
 
 msfw deps by module: `domain` → `domain-core`; `application` → `domain-core` (+ `event-core`, `outbox`
 if publishing); `adapter` → `spring-outbox` or `spring-adapter-core` (+ `spring-event-consumption` if
@@ -45,7 +46,7 @@ consuming; `msfw-test` at test scope for the in-memory fakes).
 | Kind | Pattern / base type |
 |---|---|
 | Aggregate root | `extends Aggregate<TId>` (set `this.id` in ctor; has `_id()`/`set_id` technical key) |
-| Identity | `extends Identity<T>` (override `value()`, `equals`, `hashCode`) |
+| Identity | `extends StringIdentity` for string ids (non-blank + type-strict `equals`/`hashCode` built in; **never hand-roll `Identity<String>`** — fitness fn `MsfwFitness.identitiesUseStringBase` fails the build). `extends Identity<T>` only for non-string ids. `IdempotencyKey` = shared client-token id. |
 | Value object | `implements DomainValue` (prefer `record`) — msfw ships `Money/Currency/Quantity/DTime` |
 | Domain event | `extends AbstractDomainEvent` (`super(DomainEventType.of("<Ctx>","<Name>"), occurredAt)`) |
 | Factory | `implements Factory<T,P>`; publish via `DomainEventPublisher.publish(...)` |
@@ -102,10 +103,14 @@ map rows via `reconstitute(entity)`, never `toDomain` directly. If a use-case ma
 aggregate for an existing row (upsert-by-natural-key), override `save` to pre-resolve `_id` via
 `findEntity(aggregate.id())` then call `super.save`.
 
-**Consume event** = `…PipelineFactory extends FiveStepsPipelineFactory<Cmd>` overriding
-`declareDomainEventType / declareEventDeserializer / declareEventDataDeserializer /
-declareApplicationInputPreparer / declareApplicationTarget`.
-> ⚠ msfw has **no default** `CloudEventDeserializer` / `EventDataDeserializer` — write them per schema.
+**Consume event** = declare a `@Bean EventSubscriber` and register subscriptions on the injected
+`ConsumptionPipelines` (see §2): `pipelines.subscribe(ctx, name, DataDto.class)[.prepare(converter)]`
+`.handle(facade, "method"[, Input.class])` — `.withoutInboxDedup()` for projections.
+> ✅ msfw **ships default** `JsonCloudEventDeserializer` + `AvroCloudEventDeserializer` (auto-selected per
+> routing `format`), so a service only declares its DTO; write a custom deserializer only for a
+> non-standard envelope. Inbox idempotency, retry/backoff and DLQ are on by default. The older
+> `FiveStepsPipelineFactory` subclass form still works but is no longer the default.
+> Wiring: `@Import(ConsumptionConfiguration.class)`.
 
 ---
 
@@ -138,7 +143,8 @@ declareApplicationInputPreparer / declareApplicationTarget`.
 2. domain: aggregate / identity / value / event (`DomainEventType`) / factory.
 3. application: `Xxx` port + `…Uc`, `…Cmd`, repository port; publish → `@EventPublishHandler`.
 4. adapter: `inbound/restful` + `Facade`; `outbound/persistence` `…Oa`+`…Entity`+`…JpaRepository`;
-   `messaging` `…PipelineFactory` if consuming.
-5. `AdapterConfiguration` imports `SpringCoreConfiguration` (+ `OutboxConfiguration` if publishing); use-cases as `@Bean`.
+   `messaging` `EventSubscriber` bean → `…EventsFacade` if consuming.
+5. `AdapterConfiguration` imports `SpringCoreConfiguration` (+ `OutboxConfiguration` if publishing,
+   `ConsumptionConfiguration` if consuming); use-cases as `@Bean`.
 6. `bootstrap.yml` → config server; outbox migrations (`outbox_events`, `published_event_trackers`).
 7. Tests per §5.

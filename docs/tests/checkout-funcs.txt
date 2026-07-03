@@ -1,7 +1,0 @@
-TC-CHK-01 [Linear Saga State]: Khởi tạo CheckoutSaga. Chuyển trạng thái sang ORDERING khi chưa qua RESERVING -> Ném lỗi máy trạng thái.
-
-TC-CHK-02 [Reverse-Order Compensation]: Giả lập PaymentPort.initEscrow() ném lỗi. Assert Use Case bắt exception và gọi theo đúng thứ tự: OrderPort.cancelOrder() trước, sau đó mới gọi InventoryPort.releaseStock().
-
-TC-CHK-03 [Price Authority]: Input đầu vào (SubmitCheckoutCmd) truyền SKU A giá 50. Mock CatalogPort.fetchPrices() trả về giá SKU A là 100. Assert lệnh gọi sang OrderPort.createPendingOrder() phải truyền priceSnapshot là 100 (Bỏ qua hoàn toàn dữ liệu giá từ Client).
-
-TC-CHK-04 [Idempotency Guard]: Gọi Use Case 2 lần liên tiếp với cùng một idempotencyKey. Giả lập CheckoutSessionOa (Redis fake) báo lock exists ở lần 2. Assert lần 2 không gọi tiếp sang các Port khác.

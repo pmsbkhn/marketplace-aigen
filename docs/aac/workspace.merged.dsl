@@ -287,7 +287,7 @@ group "Order Context" {
         # ---------- inlined: model/payment-context.dsl ----------
 # ==============================================================================
 # CONTEXT: Payment (Escrow)  —  C4 Level 3 (Component)
-# As-built (msfw 0.3): Payment & Settlement state-stored (memento); EscrowLedger
+# As-built (msfw 1.0.0): Payment & Settlement state-stored (memento); EscrowLedger
 # EVENT-SOURCED (event store + snapshot) + read model EscrowView (CQRS).
 # Webhook gateway (HMAC) là REST thật; gRPC InitEscrow = REST /internal/* stand-in.
 # ==============================================================================
@@ -298,7 +298,7 @@ group "Payment Context" {
 
     paymentDocStore = container "Settlement Docs Store" "Chứng từ đối soát ghi-một-lần (S3 Object Lock/WORM ở prod cloud; local FS ở standalone)." "AWS S3 / FS" "Database,Sensitive"
 
-    paymentApi = container "Payment Service" "Init escrow, webhook gateway, đối soát + payout. Escrow ledger event-sourced + CQRS read model." "Spring Boot 4 / Java 21 / msfw 0.3" {
+    paymentApi = container "Payment Service" "Init escrow, webhook gateway, đối soát + payout. Escrow ledger event-sourced + CQRS read model." "Spring Boot 4 / Java 21 / msfw 1.0.0" {
 
         # --- A. INBOUND ---
         webhookController         = component "WebhookController" "REST: POST /v1/payments/webhook (xác minh HMAC + chống replay)" "Spring MVC" "Ingress"
