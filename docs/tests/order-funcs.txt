@@ -1,9 +1,0 @@
-TC-ORD-01 [State Machine Enforcement]: Khởi tạo Order (PENDING). Gọi hàm chuyển sang SHIPPED (nhảy cóc qua TO_SHIP) -> Ném lỗi InvalidTransitionException.
-
-TC-ORD-02 [Cancellation Restriction]: Gọi hàm cancel() trên Order đang ở trạng thái SHIPPED hoặc COMPLETED -> Ném lỗi InvalidTransitionException.
-
-TC-ORD-03 [Cart Integrity - Empty]: Khởi tạo Order với danh sách items rỗng -> Ném lỗi DomainException(EMPTY_CART).
-
-TC-ORD-04 [Cart Integrity - Math]: Khởi tạo Order với 2 item: Item 1 (qty: 2, price: 100), Item 2 (qty: 1, price: 50). Assert totalAmount bắt buộc tính ra 250.
-
-TC-ORD-05 [Audit Trail Immutability]: Cố gắng sửa đổi trường thông tin của một bản ghi trong OrderStatusHistory đã được ghi nhận trước đó -> Ném lỗi (Hoặc thiết kế class hoàn toàn không có hàm mutate).

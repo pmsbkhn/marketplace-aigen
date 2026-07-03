@@ -1,7 +1,0 @@
-Dependency Inversion Test: Mã nguồn trong package domain không được phép import bất kỳ class nào từ application hoặc adapter (bao gồm cả thư viện Spring Framework).
-
-Encapsulation Test: Tất cả các Aggregate Root và Entity không được phép chứa các hàm setter dạng public. Các trường dữ liệu chỉ được biến đổi thông qua các hàm nghiệp vụ (Verb-based methods).
-
-Event Publish Test: Các hàm trong application.port.in (Use Case) có thực hiện ghi dữ liệu thay đổi trạng thái bắt buộc phải được đánh dấu bằng annotation @EventPublishHandler(eventProcessors = JsonEventStoreProcessor.class).
-
-Exception Handling Test: Controller ở tầng adapter không được phép chứa khối lệnh try/catch bắt Exception chung chung để trả về HTTP 500, mà phải để GlobalExceptionHandler tự xử lý.

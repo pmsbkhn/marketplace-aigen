@@ -1,5 +1,0 @@
-TC-NOT-01 [State Machine]: Khởi tạo Notification (ACCEPTED). Gọi hàm chuyển thẳng sang SENT bỏ qua RENDERED -> Ném lỗi.
-
-TC-NOT-02 [Opt-Out Enforcement]: Input là một tin nhắn priority = BULK. Mock PreferencePort trả về optOut = true. Assert máy trạng thái nội bộ chuyển thành SUPPRESSED. Assert Outbound Provider (Email/SMS) không được gọi.
-
-TC-NOT-03 [L4 Data Encryption check]: Truyền input variables chứa OTP. Assert Object khi được chuyển xuống lệnh Save của Repository thì data payload đã ở trạng thái ciphertext, không còn plaintext trong memory.
