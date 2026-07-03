@@ -1,0 +1,1 @@
+{"status":200,"message":"Success","timestamp":"2026-06-12T12:00:00.000Z","data":[{"skuCode":"SKU-1","priceAmount":100000,"currency":"VND","merchantId":"M-1","active":true},{"skuCode":"SKU-2","priceAmount":0,"currency":"VND","merchantId":"M-1","active":false}]}
